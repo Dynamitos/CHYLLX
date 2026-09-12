@@ -9,7 +9,10 @@ saves it to a local, offline, persistent collection.
 
 ## Confirmed decisions
 
-- **Q1** Map: **Leaflet + OpenStreetMap** tiles (no key, offline-able).
+- **Q1** Map: **MapLibre GL JS** with a **3D globe** projection + **free
+  satellite raster tiles (Esri World Imagery, no API key, offline-able via
+  Workbox runtime caching)**. (Switched from Leaflet/OSM: the brief asked for a
+  satellite/globe view; MapLibre is the open-source path that gives both.)
 - **Q2** PWA tooling: **`vite-plugin-pwa`** (manifest + Workbox SW + tile caching).
 - **Q3** Spots: **hardcoded/seeded demo spots in-app now**, but with a
   **backend-ready data layer** (a `SpotRepository` interface so a real server
@@ -41,16 +44,22 @@ already configured in `vite.config.ts`.
 
 1. **PWA**: add `vite-plugin-pwa`. Configure `VitePWA` in `vite.config.ts`
    (name, theme_color, display `standalone`, icons 192/512 + maskable,
-   `workbox` runtime caching of OSM tile subdomains so the map still renders
-   offline, precache for app shell). Register SW in `main.ts` via
+   `workbox` runtime caching of the satellite tile host so the map still
+   renders offline, precache for app shell). Register SW in `main.ts` via
    `virtual:pwa-register`.
 2. **Shell**: reduce `App.vue` to a full-bleed container (no header/logo);
    rewrite `main.css` base to remove the centered max-width constraint for
    the map area. Router: single route `/` → `MapView` (keep vue-router, drop
    About).
-3. **Map**: `MapView.vue` initializes a Leaflet map on a full-screen div
-   (import `leaflet/dist/leaflet.css`), tiles from OpenStreetMap, default
-   center to a fixed demo location (configurable), then follows the player.
+3. **Map**: `MapView.vue` builds a MapLibre GL JS `Map` on a full-screen div
+   (import `maplibre-gl/dist/maplibre-gl.css`), with a minimal `Style`
+   specification: `projection: { type: 'globe' }` + a `raster` source/layer over
+   free Esri World Imagery tiles (no key) + a dark `sky`. A `GlobeControl`
+   lets the user flip globe ⇄ flat; a `NavigationControl` provides zoom. A
+   custom `Marker` DOM element is the player dot (non-interactive via
+   `pointer-events:none`); the GPS-accuracy ring is a GeoJSON fill layer. Spot
+   markers are custom `Marker` elements (status-classed dots + label) with a
+   `Popup` detail card; initial camera is the fixed demo center.
 4. **GPS**: `composables/useGeolocation.ts` wraps
    `navigator.geolocation.watchPosition` into a reactive
    `{ position, accuracy, error }` (Vue `ref`s), with cleanup on unmount.
@@ -86,9 +95,10 @@ already configured in `vite.config.ts`.
    - `collectSpot(spot)`: call `generateMusic`, write to IDB, update reactive
      spot status → `collected`, mark marker as collected.
 9. **UI (minimal)**:
-   - `MapView.vue` — map + player marker (custom pulsing divIcon) + spot
-     markers (divIcon, distinct styles: unclaimed / collectable (pulse) /
-     collected (muted)). On collectable, a fixed "Collect" button appears.
+   - `MapView.vue` — map + player marker (custom pulsing DOM element) + spot
+     markers (custom `Marker` element, distinct styles: unclaimed /
+     collectable (pulse) / collected (muted)). On collectable, a fixed
+     "Collect" button appears.
    - `components/CollectModal.vue` — shows spot name, plays the generated
      preview, "Keep it" finalizes collection.
    - `components/CollectionSheet.vue` — bottom sheet listing collected pieces
@@ -106,11 +116,12 @@ already configured in `vite.config.ts`.
 ## Files to modify / create
 
 Modify:
-- `package.json` — add `leaflet`, `@types/leaflet`, `vite-plugin-pwa`, `idb`.
+- `package.json` — add `maplibre-gl`, `vite-plugin-pwa`, `idb`. (Leaflet +
+  `@types/leaflet` were removed when switching to MapLibre.)
 - `vite.config.ts` — add `VitePWA` plugin + config.
 - `index.html` — title, theme-color, mobile viewport.
-- `src/main.ts` — register SW (`virtual:pwa-register`), import leaflet css if
-  global, mount.
+- `src/main.ts` — register SW (`virtual:pwa-register`), import
+  `maplibre-gl/dist/maplibre-gl.css` if global, mount.
 - `src/App.vue` — strip to full-bleed shell.
 - `src/assets/main.css` (+ `base.css`) — remove centered max-width for app;
   full-height layout.
@@ -138,10 +149,11 @@ Remove:
 
 ## Steps
 
-- [x] 1. Install deps: `leaflet`, `@types/leaflet`, `vite-plugin-pwa`, `idb`.
+- [x] 1. Install deps: `maplibre-gl` (later; initially `leaflet` +
+       `@types/leaflet`), `vite-plugin-pwa`, `idb`.
 - [x] 2. PWA: configure `vite.config.ts` (VitePWA manifest + workbox runtime
-       caching for OSM tiles + precache), add PWA icons + `index.html` metas,
-       `env.d.ts` decl, SW registration in `main.ts`.
+       caching for the satellite tile host + precache), add PWA icons +
+       `index.html` metas, `env.d.ts` decl, SW registration in `main.ts`.
 - [x] 3. Shell: strip `App.vue`/`main.css`/`base.css` to full-bleed; router →
        single `MapView`; delete boilerplate files.
 - [x] 4. `types/music.ts` + `lib/geo.ts` (Haversine, within-radius).
@@ -151,14 +163,19 @@ Remove:
 - [x] 7. `lib/audio.ts`: add CC0 mp3s to `public/music/`; stub
        `generateMusic(baseSongId, mood)` + preview `AudioPlayer`.
 - [x] 8. `lib/db.ts` IndexedDB collection store (add/get/all, unique per spot).
-- [x] 9. `MapView.vue`: Leaflet init (OSM tiles), player marker (divIcon),
-       spot markers w/ status styles, follow-player, proximity watch →
-       `collectable` state.
+- [x] 9. `MapView.vue`: MapLibre GL JS init (globe + Esri satellite raster),
+       player marker (custom DOM element, non-interactive), accuracy ring
+       (GeoJSON fill layer), spot markers w/ status styles, follow-player
+       (`flyTo` until user pans), proximity watch → `collectable` state.
 - [x] 10. `CollectModal.vue` (preview + keep) + collect flow wiring
        (generateMusic → db → status `collected`).
 - [x] 11. `CollectionSheet.vue` + Collection FAB (list + play collected).
 - [x] 12. Geolocation status banner + graceful no-GPS fallback.
 - [x] 13. Polish mobile layout (safe areas, touch targets), responsive.
+- [x] 14. **Switch Leaflet → MapLibre GL JS** (3D globe + Esri satellite
+       raster, `GlobeControl`/`NavigationControl`); rewire `main.ts` CSS import,
+       `vite.config.ts` tile-cache `urlPattern`, deps (`maplibre-gl` in,
+       `leaflet`/`@types/leaflet` out); update README + this plan.
 
 ## Verification
 
@@ -166,15 +183,17 @@ Remove:
   `manifest.webmanifest` + `sw.js` + `registerSW`.
 - Lighthouse (PWA/SEO) — installability passes: valid manifest, icons,
   service worker, HTTPS (use `vite preview` / a local HTTPS tunnel).
-- On a phone / Chrome DevTools (device mode + **Geolocation** override, or
-  `leaflet` with a simulated position for desktop testing):
-  - map renders OSM tiles; player dot appears and follows simulated movement.
+- On a phone / Chrome DevTools (device mode + **Geolocation** override, or a
+  simulated position for desktop testing):
+  - map renders satellite tiles (globe by default; flat via the globe control);
+    player dot appears and follows simulated movement.
   - moving a demo spot into range flips it to `collectable` (pulse + button).
   - Collect → preview plays, Keep → saved; marker becomes `collected`; cannot
     re-collect (one-time).
   - Collection sheet lists the piece; playing works **offline** (SW + precached
     mp3 + IDB persisted across reload).
-  - Reload → collection persists; map tiles load offline after first visit.
+  - Reload → collection persists; map tiles load offline after first visit
+    (Workbox runtime cache of the satellite tile host).
 - Backend-readiness: `MapView`/collect flow depend only on `SpotRepository`
   interface — swapping `StaticSpotRepository` for an `HttpSpotRepository`
   compiles with no UI changes (note a tiny stub to confirm the seam).

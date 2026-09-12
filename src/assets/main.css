@@ -20,10 +20,11 @@ body {
   max-width: none;
 }
 
-/* Leaflet must fill its container. */
-.leaflet-container {
+/* MapLibre must fill its container (the canvas is injected into `.map`). */
+.maplibregl-map,
+.maplibregl-canvas-container {
   width: 100%;
   height: 100%;
-  background: #e8e6e3;
+  background: #0b1020;
   font: inherit;
 }
