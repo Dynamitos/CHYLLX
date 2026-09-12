@@ -48,8 +48,31 @@ export function useGeolocation(): Geolocation {
 
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
+        // The W3C `GeolocationCoordinates` exposes `latitude`/`longitude` (the TS
+        // lib confirms: `lat`/`lng` are *not* on the type). Some environments have
+        // been observed delivering a fix whose values are NaN/missing, and a couple
+        // of wrappers mirror the values onto `lat`/`lng` as well. To be robust we
+        // read the canonical names and fall back to the alternate, then validate
+        // with Number.isFinite. Passing an invalid value downstream makes MapLibre
+        // throw "Invalid LngLat object: (NaN, NaN)" — so we reject it the same way
+        // we'd reject a hard failure: stay in `acquiring`, never store it.
+        const coords = pos.coords as unknown as {
+          latitude?: number
+          longitude?: number
+          lat?: number
+          lng?: number
+          accuracy?: number
+        }
+        const lat = typeof coords.latitude === 'number' ? coords.latitude : coords.lat
+        const lng = typeof coords.longitude === 'number' ? coords.longitude : coords.lng
+        if (typeof lat !== 'number' || !Number.isFinite(lat) || typeof lng !== 'number' || !Number.isFinite(lng)) {
+          error.value = 'Position is invalid; waiting for a valid fix.'
+          state.value = 'acquiring'
+          return
+        }
+        const acc = typeof coords.accuracy === 'number' && Number.isFinite(coords.accuracy) ? coords.accuracy : null
         position.value = pos
-        accuracy.value = pos.coords.accuracy
+        accuracy.value = acc
         state.value = 'ready'
         error.value = null
       },
