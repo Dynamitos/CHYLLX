@@ -67,6 +67,14 @@ export const BASE_SONGS: readonly BaseSong[] = [
     // User-provided track, trimmed to a 90 s excerpt, shipped in /music/.
     assetUrl: '/music/frog-turkish.mp3',
   },
+  {
+    id: 'eine-kleine-nachtmusik',
+    title: 'Eine kleine Nachtmusik, 1st mov. (Allegro)',
+    composer: 'W. A. Mozart',
+    era: '1787',
+    // Public domain (composer died 1791). CC0 recording shipped in /music/.
+    assetUrl: '/music/eine-kleine-nachtmusik.mp3',
+  },
 ] as const
 
 export function getBaseSong(id: BaseSongId): BaseSong {

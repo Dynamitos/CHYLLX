@@ -49,6 +49,7 @@ export type BaseSongId =
   | 'Schubert - Schwanenlied'
   | 'Strauss - Zarathustra'
   | 'frog-turkish'
+  | 'eine-kleine-nachtmusik'
 
 /**
  * A piece the player has collected. Persisted to IndexedDB (see lib/db.ts).

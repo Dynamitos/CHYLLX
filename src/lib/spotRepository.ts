@@ -35,7 +35,7 @@ const OFFSETS: Array<{
     description: '"Cradle forest" — a protected grove of old cembra pines (Zirbel) in a boggy meadow, a designated natural gem (Naturjuwel) of the Nationalpark.',
     lat: 47.1700288,
     lng: 12.6234818,
-    baseSongId: 'frog-turkish',
+    baseSongId: 'eine-kleine-nachtmusik',
     tone: 'Calm, anticipatory',
   },
   {
@@ -44,7 +44,7 @@ const OFFSETS: Array<{
     description: 'Smaller emerald-green lake at the gondola middle station — on the approach route before the hut. Good "first checkpoint" for the ascent; calm, reflective mood.',
     lat: 47.1631071,
     lng: 12.6192457,
-    baseSongId: 'frog-turkish',
+    baseSongId: 'eine-kleine-nachtmusik',
     tone: 'Reflective, intimate',
   },
   {
@@ -53,7 +53,7 @@ const OFFSETS: Array<{
     description: 'The turquoise glacial reservoir with the snow-dusted 3,000 m peaks around you.',
     lat: 47.1323455,
     lng: 12.6237069,
-    baseSongId: 'frog-turkish',
+    baseSongId: 'eine-kleine-nachtmusik',
     tone: 'Expansive, triumphant',
   },
   {
@@ -62,7 +62,7 @@ const OFFSETS: Array<{
     description: 'Marked stone cairn at the top-out of the ferrata, on the southern shore.',
     lat: 47.129703,
     lng: 12.6242461,
-    baseSongId: 'frog-turkish',
+    baseSongId: 'eine-kleine-nachtmusik',
     tone: 'Eulogy, elegy',
   },
   {
@@ -71,7 +71,7 @@ const OFFSETS: Array<{
     description: 'Big open plateau with a vast panorama over the Glockner range and all the way across to the Kals valley by the Großglockner.',
     lat: 47.1158043,
     lng: 12.6270994,
-    baseSongId: 'frog-turkish',
+    baseSongId: 'eine-kleine-nachtmusik',
     tone: 'bright',
   },
 ]
