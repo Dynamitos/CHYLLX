@@ -1,5 +1,22 @@
 import { onScopeDispose, ref, type Ref } from 'vue'
 
+// A minimal, injectable position source. The real geolocation code path is the
+// default; a test/demo harness can pass a `feed` that drives the *same* reactive
+// `position`/`accuracy` the UI already consumes, so it reuses the entire marker,
+// accuracy-ring, and proximity pipeline with no duplication.
+export interface InjectedPosition {
+  readonly lat: number
+  readonly lng: number
+  readonly accuracy: number
+}
+
+export interface GeolocationOptions {
+  /** When provided, `start()` uses this source instead of `navigator.geolocation`. */
+  feed?: {
+    wire(onFix: (p: InjectedPosition) => void): () => void
+  }
+}
+
 export type GeoState = 'idle' | 'acquiring' | 'ready' | 'denied' | 'unavailable'
 
 export interface Geolocation {
@@ -26,17 +43,57 @@ export interface Geolocation {
  *   it just stays at its default center.
  * - Cleans up the watcher on scope disposal so we don't leak a watch handle.
  */
-export function useGeolocation(): Geolocation {
+export function useGeolocation(options: GeolocationOptions = {}): Geolocation {
   const position = ref<GeolocationPosition | null>(null)
   const accuracy = ref<number | null>(null)
   const state = ref<GeoState>('idle')
   const error = ref<string | null>(null)
   let watchId: number | null = null
   let started = false
+  // Set by an injected feed (demo mode) so `stop()` can tear it down too.
+  let teardownFeed: (() => void) | null = null
+
+  const applyFix = (
+    p: { lat: number | undefined; lng: number | undefined; accuracy: number },
+  ): void => {
+    if (typeof p.lat !== 'number' || !Number.isFinite(p.lat) || typeof p.lng !== 'number' || !Number.isFinite(p.lng)) {
+      // Same guard as the real path: never store a non-finite fix.
+      error.value = 'Position is invalid; waiting for a valid fix.'
+      state.value = 'acquiring'
+      return
+    }
+    // Build a structurally-valid `GeolocationPosition` so the existing
+    // `resolveCoords`/watcher code works unchanged.
+    const fakePos: GeolocationPosition = {
+      coords: {
+        latitude: p.lat,
+        longitude: p.lng,
+        accuracy: Number.isFinite(p.accuracy) ? p.accuracy : 0,
+        altitude: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    } as GeolocationPosition
+    position.value = fakePos
+    accuracy.value = Number.isFinite(p.accuracy) ? p.accuracy : null
+    state.value = 'ready'
+    error.value = null
+  }
 
   const start = (): void => {
     if (started) return
     started = true
+
+    // Demo/test injection: drive the same reactive state from an external feed.
+    // This is how the in-app "simulate" mode works — no navigator.geolocation
+    // needed, so it functions in headless or permission-denied contexts too.
+    if (options.feed) {
+      state.value = 'acquiring'
+      teardownFeed = options.feed.wire(applyFix)
+      return
+    }
 
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
       state.value = 'unavailable'
@@ -49,13 +106,11 @@ export function useGeolocation(): Geolocation {
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         // The W3C `GeolocationCoordinates` exposes `latitude`/`longitude` (the TS
-        // lib confirms: `lat`/`lng` are *not* on the type). Some environments have
-        // been observed delivering a fix whose values are NaN/missing, and a couple
-        // of wrappers mirror the values onto `lat`/`lng` as well. To be robust we
-        // read the canonical names and fall back to the alternate, then validate
-        // with Number.isFinite. Passing an invalid value downstream makes MapLibre
-        // throw "Invalid LngLat object: (NaN, NaN)" — so we reject it the same way
-        // we'd reject a hard failure: stay in `acquiring`, never store it.
+        // lib confirms: `lat`/`lng` are *not* on the type). A couple of wrappers
+        // mirror the values onto `lat`/`lng`, so we fall back to those, then
+        // validate with Number.isFinite. An invalid value would make MapLibre
+        // throw "Invalid LngLat object: (NaN, NaN)" — so we reject it via
+        // applyFix the same way we'd reject a hard failure.
         const coords = pos.coords as unknown as {
           latitude?: number
           longitude?: number
@@ -65,16 +120,8 @@ export function useGeolocation(): Geolocation {
         }
         const lat = typeof coords.latitude === 'number' ? coords.latitude : coords.lat
         const lng = typeof coords.longitude === 'number' ? coords.longitude : coords.lng
-        if (typeof lat !== 'number' || !Number.isFinite(lat) || typeof lng !== 'number' || !Number.isFinite(lng)) {
-          error.value = 'Position is invalid; waiting for a valid fix.'
-          state.value = 'acquiring'
-          return
-        }
-        const acc = typeof coords.accuracy === 'number' && Number.isFinite(coords.accuracy) ? coords.accuracy : null
-        position.value = pos
-        accuracy.value = acc
-        state.value = 'ready'
-        error.value = null
+        const acc = typeof coords.accuracy === 'number' ? coords.accuracy : 0
+        applyFix({ lat, lng, accuracy: acc })
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
@@ -102,6 +149,10 @@ export function useGeolocation(): Geolocation {
       navigator.geolocation.clearWatch(watchId)
     }
     watchId = null
+    if (teardownFeed) {
+      teardownFeed()
+      teardownFeed = null
+    }
     started = false
   }
 
