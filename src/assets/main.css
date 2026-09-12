@@ -9,6 +9,10 @@ body {
   overflow: hidden;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+  /* Always dark: Vue's scaffold uses gray text on white in light mode, and
+     light-gray text that then leaks into MapLibre's white popups. */
+  color: #f8fafc;
+  background: #0b1020;
 }
 
 #app {
