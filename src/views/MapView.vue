@@ -144,10 +144,10 @@ const hasCollectable = computed(() =>
   spots.value.some((s) => s.status === 'collectable'),
 )
 
-// Demo center (Potsdamer Platz, Berlin) — the map's initial view.
+// Demo center (Weißsee, Berchtesgaden) — the map's initial view.
 // MapLibre uses [lng, lat] order (matches GeoJSON) — the reverse of Leaflet.
-// 47.1720042,12.5525377
-const DEMO_CENTER: [number, number] = [47.1372927,12.6238395]
+// 47.1372927,12.6238395
+const DEMO_CENTER: [number, number] = [12.6238395, 47.1372927]
 const INITIAL_ZOOM = 14
 
 // --- module-level (non-reactive) MapLibre handles ---
