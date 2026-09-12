@@ -59,6 +59,14 @@ export const BASE_SONGS: readonly BaseSong[] = [
     // Public domain (composer died 1949). CC0 recording shipped in /music/.
     assetUrl: '/music/Strauss%20-%20Zarathustra.mp3',
   },
+  {
+    id: 'frog-turkish',
+    title: 'Frog Turkish',
+    composer: 'Custom',
+    era: '2026',
+    // User-provided track, trimmed to a 90 s excerpt, shipped in /music/.
+    assetUrl: '/music/frog-turkish.mp3',
+  },
 ] as const
 
 export function getBaseSong(id: BaseSongId): BaseSong {

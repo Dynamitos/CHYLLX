@@ -54,8 +54,14 @@ export async function isCollected(spotId: string): Promise<boolean> {
   return row !== null
 }
 
-/** Remove a collected piece (used by tests / future "reset"). */
+/** Remove a collected piece (used by tests / the debug panel's "reset"). */
 export async function deletePiece(spotId: string): Promise<void> {
   const db = await getDb()
   await db.delete(STORE, spotId)
+}
+
+/** Remove every collected piece (debug-panel "clear all"). */
+export async function clearAllPieces(): Promise<void> {
+  const db = await getDb()
+  await db.clear(STORE)
 }

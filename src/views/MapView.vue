@@ -19,7 +19,7 @@ import {
 import { useGeolocation } from '@/composables/useGeolocation'
 import { createSimFeed } from '@/lib/demoSim'
 import { spotRepository } from '@/lib/spotRepository'
-import { getAllPieces, isCollected, savePiece } from '@/lib/db'
+import { clearAllPieces, deletePiece, getAllPieces, isCollected, savePiece } from '@/lib/db'
 import { renderForSpot, toCollectedPiece } from '@/lib/audio'
 import { isWithinRadius, type LatLng } from '@/lib/geo'
 
@@ -54,6 +54,7 @@ function resolveCoords(
 import type { CollectedPiece, MusicSpot } from '@/types/music'
 import CollectModal from '@/components/CollectModal.vue'
 import CollectionSheet from '@/components/CollectionSheet.vue'
+import DebugPanel from '@/components/DebugPanel.vue'
 
 // --- state ---
 const mapEl = ref<HTMLElement | null>(null)
@@ -63,6 +64,10 @@ const spots: Ref<MusicSpot[]> = ref([])
 const pendingSpot = ref<MusicSpot | null>(null)
 const collecting = ref(false)
 const sheetOpen = ref(false)
+// Dev-only debug panel (force-collect / reset any spot, bypassing GPS
+// proximity). Never rendered in a production build.
+const debugOpen = ref(false)
+const isDev = import.meta.env.DEV
 
 const simFeed = createSimFeed()
 const geo = useGeolocation({ feed: simFeed })
@@ -431,6 +436,33 @@ function openCollectModal(): void {
   if (target) pendingSpot.value = target
 }
 
+/** Delete a single collected piece (from the collection sheet's 🗑 button). */
+async function onDeletePiece(spotId: string): Promise<void> {
+  await deletePiece(spotId)
+  collected.value = await getAllPieces()
+  const spot = spots.value.find((s) => s.id === spotId)
+  if (spot) spot.status = 'unclaimed'
+  refreshSpotMarkers()
+}
+
+/** Wipe the entire collection (from the collection sheet's "Clear all"). */
+async function onClearAll(): Promise<void> {
+  await clearAllPieces()
+  collected.value = []
+  for (const s of spots.value) s.status = 'unclaimed'
+  refreshSpotMarkers()
+}
+
+/** Debug: collect a spot immediately, ignoring GPS proximity. */
+async function onDebugForceCollect(spot: MusicSpot): Promise<void> {
+  await onCollect(spot)
+}
+
+/** Debug: undo a collection and put the spot back to `unclaimed`. */
+async function onDebugReset(spot: MusicSpot): Promise<void> {
+  await onDeletePiece(spot.id)
+}
+
 onMounted(() => {
   initMap()
   void loadSpots()
@@ -518,6 +550,17 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Debug FAB (dev-only): force-collect / reset spots without GPS. -->
+    <button
+      v-if="isDev"
+      class="debug-fab"
+      type="button"
+      title="Debug: force-collect / reset spots"
+      @click="debugOpen = true"
+    >
+      🐞
+    </button>
+
     <!-- Collect modal. -->
     <CollectModal
       v-if="pendingSpot"
@@ -533,6 +576,18 @@ onBeforeUnmount(() => {
       :open="sheetOpen"
       :pieces="collected"
       @close="sheetOpen = false"
+      @delete="onDeletePiece"
+      @clear-all="onClearAll"
+    />
+
+    <!-- Debug panel (dev-only). -->
+    <DebugPanel
+      v-if="isDev"
+      :open="debugOpen"
+      :spots="spots"
+      @close="debugOpen = false"
+      @force-collect="onDebugForceCollect"
+      @reset="onDebugReset"
     />
   </div>
 </template>
@@ -600,6 +655,27 @@ onBeforeUnmount(() => {
   padding: 0.05rem 0.55rem;
   border-radius: 999px;
   font-size: 0.85rem;
+}
+
+/* --- Debug FAB (dev-only, bottom-right above the nav controls) --- */
+.debug-fab {
+  position: absolute;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 900;
+  width: 2.8rem;
+  height: 2.8rem;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c2d12, #451a03);
+  color: #fff;
+  font-size: 1.2rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.debug-fab:active {
+  transform: scale(0.94);
 }
 
 /* --- Collect FAB (bottom-center, appears when in range) --- */

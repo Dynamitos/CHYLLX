@@ -41,8 +41,14 @@ export interface MusicSpot {
   status?: SpotStatus
 }
 
-/** The set of CC0 "base songs" shipped in `public/music/`. */
-export type BaseSongId = 'Wolf - Wandererlied' | 'Schubert - An die Musik' | 'Bruckner - 4th, finale' | 'Schubert - Schwanenlied' | 'Strauss - Zarathustra'
+/** The set of "base songs" shipped in `public/music/`. */
+export type BaseSongId =
+  | 'Wolf - Wandererlied'
+  | 'Schubert - An die Musik'
+  | 'Bruckner - 4th, finale'
+  | 'Schubert - Schwanenlied'
+  | 'Strauss - Zarathustra'
+  | 'frog-turkish'
 
 /**
  * A piece the player has collected. Persisted to IndexedDB (see lib/db.ts).

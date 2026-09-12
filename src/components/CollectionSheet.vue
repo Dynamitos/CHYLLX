@@ -10,7 +10,17 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'delete', spotId: string): void
+  (e: 'clear-all'): void
 }>()
+
+function remove(p: CollectedPiece): void {
+  if (playingId.value === p.spotId) {
+    pausePlayer()
+    playingId.value = null
+  }
+  emit('delete', p.spotId)
+}
 
 const playingId = ref<string | null>(null)
 
@@ -62,6 +72,14 @@ function baseComposer(p: CollectedPiece): string {
         <header class="sheet-head">
           <h2>Collection</h2>
           <span class="count">{{ pieces.length }} piece{{ pieces.length === 1 ? '' : 's' }}</span>
+          <button
+            v-if="pieces.length > 0"
+            class="clear-all"
+            type="button"
+            @click="emit('clear-all')"
+          >
+            Clear all
+          </button>
           <button class="close" type="button" aria-label="Close" @click="emit('close')">
             ✕
           </button>
@@ -102,6 +120,15 @@ function baseComposer(p: CollectedPiece): string {
               </div>
 
               <div class="when">{{ formatWhen(p.collectedAt) }}</div>
+
+              <button
+                class="delete"
+                type="button"
+                :aria-label="`Delete ${p.spotName}`"
+                @click="remove(p)"
+              >
+                🗑
+              </button>
             </li>
           </ul>
         </div>
@@ -209,13 +236,42 @@ export function formatWhen(iso: string): string {
 
 .row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   gap: 0.85rem;
   align-items: center;
   padding: 0.7rem 0.85rem;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.delete {
+  width: 2.1rem;
+  height: 2.1rem;
+  flex: none;
+  border: none;
+  border-radius: 50%;
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.delete:active {
+  transform: scale(0.94);
+}
+
+.clear-all {
+  border: none;
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
 }
 
 .thumb {
