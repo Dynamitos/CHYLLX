@@ -594,6 +594,76 @@ onBeforeUnmount(() => {
   opacity: 0.75;
 }
 
+/* MapLibre's default popup is a white card that inherits body text color.
+   In dark (or scaffold light-gray) schemes that becomes gray-on-white. */
+:global(.maplibregl-popup-content) {
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 12px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+:global(.maplibregl-popup-close-button) {
+  color: #e2e8f0;
+  font-size: 1.1rem;
+  padding: 4px 8px;
+}
+
+:global(.maplibregl-popup-close-button:hover) {
+  color: #fff;
+  background: transparent;
+}
+
+:global(.maplibregl-popup-anchor-bottom .maplibregl-popup-tip) {
+  border-top-color: #0f172a;
+}
+:global(.maplibregl-popup-anchor-top .maplibregl-popup-tip) {
+  border-bottom-color: #0f172a;
+}
+:global(.maplibregl-popup-anchor-left .maplibregl-popup-tip) {
+  border-right-color: #0f172a;
+}
+:global(.maplibregl-popup-anchor-right .maplibregl-popup-tip) {
+  border-left-color: #0f172a;
+}
+
+:global(.spot-popup) {
+  color: #f8fafc;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  max-width: 220px;
+}
+
+:global(.spot-popup strong) {
+  color: #fff;
+  font-weight: 700;
+}
+
+:global(.badge) {
+  display: inline-block;
+  margin-top: 0.45rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+:global(.badge-unclaimed) {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+:global(.badge-collectable) {
+  background: #f59e0b;
+  color: #1f2937;
+}
+
+:global(.badge-collected) {
+  background: #10b981;
+  color: #052e16;
+}
+
 @keyframes spot-pulse {
   0%, 100% {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(245, 158, 11, 0.6);
