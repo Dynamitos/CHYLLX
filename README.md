@@ -1,6 +1,7 @@
 # Classica — Explore & Collect
 
-A Pokémon-Go-style **PWA** built on Vue 3 + Vite + TypeScript + Leaflet.
+A Pokémon-Go-style **PWA** built on Vue 3 + Vite + TypeScript + MapLibre GL JS
+(3D globe + satellite imagery).
 A full-screen map of your neighborhood shows your live GPS position and a
 handful of **music spots**. Walk into a spot's radius and a **Collect** button
 appears; collecting renders a short "personalized" classical piece (from the
@@ -25,8 +26,8 @@ npm run preview    # serve the production build locally
 
 | Area | Where |
 |---|---|
-| PWA (manifest + Workbox SW, OSM tile caching, precached audio) | `vite.config.ts` (`VitePWA`), `public/icons/`, `src/main.ts` |
-| Full-bleed map (Leaflet + OpenStreetMap) | `src/views/MapView.vue` |
+| PWA (manifest + Workbox SW, satellite tile caching, precached audio) | `vite.config.ts` (`VitePWA`), `public/icons/`, `src/main.ts` |
+| Full-bleed map (MapLibre GL JS globe + Esri satellite raster) | `src/views/MapView.vue` |
 | Reactive GPS (`watchPosition` → `ref`s, errors, cleanup) | `src/composables/useGeolocation.ts` |
 | Haversine distance / proximity | `src/lib/geo.ts` |
 | Spot data + **backend-ready** `SpotRepository` seam | `src/lib/spotRepository.ts`, `src/types/music.ts` |
@@ -90,7 +91,7 @@ src/
   main.ts                  # app bootstrap + SW registration
   App.vue                  # full-bleed shell
   router/index.ts          # single route -> MapView
-  views/MapView.vue        # Leaflet map, GPS, proximity, collect wiring
+  views/MapView.vue        # MapLibre GL JS globe + satellite, GPS, proximity, collect wiring
   components/
     CollectModal.vue       # preview + "keep it"
     CollectionSheet.vue    # bottom sheet, list + play
@@ -113,7 +114,8 @@ public/
 - **Lighthouse → PWA** (against `npm run preview` over HTTPS): installability
   should pass (valid manifest, icons, service worker, HTTPS).
 - On a phone / Chrome DevTools device mode + **Sensors → Geolocation**:
-  - map renders OSM tiles; the player dot follows the simulated position.
+  - map renders satellite tiles (globe view by default; toggle to flat via the
+    globe control); the player dot follows the simulated position.
   - moving into a demo spot's radius flips it to **collectable** (pulsing
     amber marker + a **Collect** FAB).
   - **Collect** → modal previews the track; **Keep it** saves it; the marker
@@ -127,9 +129,28 @@ public/
 - The demo spot coordinates are real (Potsdamer Platz, Berlin) so the demo
   "just works" if you're there; elsewhere you can still pan/zoom to the
   markers, but proximity won't trigger until a real GPS fix puts you in range.
-- The PWA precaches the full app shell + both MP3s (~1.7 MB). OSM tiles are
-  cached at runtime (StaleWhileRevalidate, 30-day TTL) so the map keeps
+- The PWA precaches the full app shell + both MP3s (~1.7 MB). Satellite tiles
+  are cached at runtime (StaleWhileRevalidate, 30-day TTL) so the map keeps
   rendering offline after the first visit.
+- **MapLibre's WebGL worker must be vendored.** MapLibre GL v6 decodes tiles in a
+  *module* web worker (`new Worker(url, { type: 'module' })`) whose entry is
+  `maplibre-gl/dist/maplibre-gl-worker.mjs` — an ES module that `import`s
+  `./maplibre-gl-shared.mjs`. Vite does **not** pre-bundle a web worker like that, so
+  MapLibre's default worker URL 404s, the worker dies, and the map falls back to the
+  (broken) main-thread path — surfacing as cryptic `e is undefined` /
+  `this.properties is undefined` crashes. The worker + its shared chunk are therefore
+  vendored as static files in `public/` (`maplibre-gl-worker.mjs` +
+  `maplibre-gl-shared.mjs`, with the dangling `sourceMappingURL` refs stripped). Vite
+  serves `public/` with a correct `text/javascript` MIME at the exact URL the map
+  computes (dev) and `vite build` copies them into `dist/` (prod); the Workbox
+  precache glob (`**/*.mjs` is included) then caches them for offline use.
+  `vite.config.ts` has a `closeBundle` hook that re-syncs these files from the package
+  into `dist/` after every build, so they stay current if you upgrade `maplibre-gl`
+  (the `public/` copies are the source of truth for dev; keep them in git).
+- **Map tiles are Esri World Imagery** — free, no API key, no account. (MapTiler
+  and Mapbox both ship higher-quality satellite imagery but require a key; to
+  swap, replace the `ESRI_SATELLITE_TILES` URL in `MapView.vue` and the matching
+  `urlPattern` in `vite.config.ts`'s Workbox `runtimeCaching`.)
 - Audio preview in the modal is a 3 s clip via a throwaway `Audio` element;
   the collection sheet uses a single shared `HTMLAudioElement` so repeated
   taps don't stack.
