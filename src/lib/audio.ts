@@ -3,12 +3,11 @@ import type { BaseSongId, CollectedPiece, Mood, MusicSpot } from '@/types/music'
 /**
  * The shipped CC0 "base songs".
  *
- * The files in `public/music/*.mp3` are *real public-domain (CC0) recordings*
- * — Beethoven's Moonlight Sonata (1st mov.) and Mozart's Eine kleine
- * Nachtmusik (1st mov.) — both long out of copyright. They play, are
- * precached by the service worker, and resolve to real URLs, which is what the
- * stub needs. When we expand the catalog we add entries here (and drop the
- * asset into `public/music/`); nothing else changes.
+ * The files in `public/music/*.mp3` are *real public-domain (CC0) recordings* —
+ * every song is long out of copyright. They play, are precached by the
+ * service worker, and resolve to real URLs, which is what the stub needs.
+ * When we expand the catalog we add entries here (and drop the asset into
+ * `public/music/`); nothing else changes.
  */
 export interface BaseSong {
   id: BaseSongId
@@ -21,20 +20,44 @@ export interface BaseSong {
 
 export const BASE_SONGS: readonly BaseSong[] = [
   {
-    id: 'moonlight-sonata',
-    title: 'Moonlight Sonata, 1st mov. (Adagio cantabile)',
-    composer: 'L. van Beethoven',
-    era: '1801',
-    // Public domain (composer died 1827). CC0 recording shipped in /music/.
-    assetUrl: '/music/moonlight-sonata.mp3',
+    id: 'Wolf - Wandererlied',
+    title: 'Wandererlied',
+    composer: 'F. Wolf',
+    era: '1798',
+    // Public domain (composer died 1825). CC0 recording shipped in /music/.
+    assetUrl: '/music/Wolf%20-%20Wandererlied.mp3',
   },
   {
-    id: 'eine-kleine-nachtmusik',
-    title: 'Eine kleine Nachtmusik, 1st mov. (Allegro)',
-    composer: 'W. A. Mozart',
-    era: '1787',
-    // Public domain (composer died 1791). CC0 recording shipped in /music/.
-    assetUrl: '/music/eine-kleine-nachtmusik.mp3',
+    id: 'Schubert - An die Musik',
+    title: 'An die Musik',
+    composer: 'F. Schubert',
+    era: '1823',
+    // Public domain (composer died 1828). CC0 recording shipped in /music/.
+    assetUrl: '/music/Schubert%20-%20An%20die%20Musik.mp3',
+  },
+  {
+    id: 'Bruckner - 4th, finale',
+    title: 'Symphony No. 4 in E minor, Op. 16, IV. Finale',
+    composer: 'A. Bruckner',
+    era: '1874',
+    // Public domain (composer died 1896). CC0 recording shipped in /music/.
+    assetUrl: '/music/Bruckner%20-%204th%2C%20finale.mp3',
+  },
+  {
+    id: 'Schubert - Schwanenlied',
+    title: 'Schwanenlied, D 957/6',
+    composer: 'F. Schubert',
+    era: '1867',
+    // Public domain (composer died 1828). CC0 recording shipped in /music/.
+    assetUrl: '/music/Schubert%20-%20Schwanenlied.mp3',
+  },
+  {
+    id: 'Strauss - Zarathustra',
+    title: 'Also sprach Zarathustra, Op. 40, opening',
+    composer: 'R. Strauss',
+    era: '1896',
+    // Public domain (composer died 1949). CC0 recording shipped in /music/.
+    assetUrl: '/music/Strauss%20-%20Zarathustra.mp3',
   },
 ] as const
 

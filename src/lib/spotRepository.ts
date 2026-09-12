@@ -19,70 +19,60 @@ export interface SpotRepository {
   getSpots(): Promise<MusicSpot[]>
 }
 
-/**
- * A set of a handful of demo spots spread across a dense, walkable area.
- *
- * Center: Potsdamer Platz, Berlin (~52.509, 13.377). Real coordinates at
- * street/point scale — if you happen to be there, the demo "just works";
- * otherwise the map still renders and you can pan/zoom to the markers.
- */
-const DEMO_CENTER = { lat: 47.1720042, lng: 12.5525377 }
-
 // Roughly 30–120 m apart so each is a distinct "walk to" target.
 const OFFSETS: Array<{
   id: string
   name: string
   description: string
-  dLat: number
-  dLng: number
+  lat: number
+  lng: number
   baseSongId: MusicSpot['baseSongId']
   tone: string
-  tempo: number
-  brightness: number
 }> = [
   {
-    id: 'spot-brunnen',
-    name: 'Der Brunnen',
-    description: 'A quiet corner fountain. Let the water settle your mind.',
-    dLat: 0.0008,
-    dLng: 0.0012,
-    baseSongId: 'moonlight-sonata',
-    tone: 'calm',
-    tempo: 0.8,
-    brightness: 0.4,
+    id: 'spot-wiegenwald',
+    name: 'Wiegenwald',
+    description: '"Cradle forest" — a protected grove of old cembra pines (Zirbel) in a boggy meadow, a designated natural gem (Naturjuwel) of the Nationalpark.',
+    lat: 47.1700288,
+    lng: 12.6234818,
+    baseSongId: 'Wolf - Wandererlied',
+    tone: 'Calm, anticipatory',
   },
   {
-    id: 'spot-hain',
-    name: 'Gedächtnis-Hain',
-    description: 'A shaded grove. The birdsong here pairs with something older.',
-    dLat: -0.0011,
-    dLng: 0.0006,
-    baseSongId: 'eine-kleine-nachtmusik',
+    id: 'spot-gruensee',
+    name: 'Grünsee',
+    description: 'Smaller emerald-green lake at the gondola middle station — on the approach route before the hut. Good "first checkpoint" for the ascent; calm, reflective mood.',
+    lat: 47.1631071,
+    lng: 12.6192457,
+    baseSongId: 'Schubert - An die Musik',
+    tone: 'Reflective, intimate',
+  },
+  {
+    id: 'spot-weissee-north',
+    name: 'Weißsee',
+    description: 'The turquoise glacial reservoir with the snow-dusted 3,000 m peaks around you.',
+    lat: 47.1323455,
+    lng: 12.6237069,
+    baseSongId: 'Bruckner - 4th, finale',
+    tone: 'Expansive, triumphant',
+  },
+  {
+    id: 'spot-steinmann',
+    name: 'Steinmann',
+    description: 'Marked stone cairn at the top-out of the ferrata, on the southern shore.',
+    lat: 47.129703,
+    lng: 12.6242461,
+    baseSongId: 'Schubert - Schwanenlied',
+    tone: 'Eulogy, elegy',
+  },
+  {
+    id: 'spot-medelz',
+    name: 'Medelz',
+    description: 'Big open plateau with a vast panorama over the Glockner range and all the way across to the Kals valley by the Großglockner.',
+    lat: 47.1158043,
+    lng: 12.6270994,
+    baseSongId: 'Schubert - Schwanenlied',
     tone: 'bright',
-    tempo: 1.0,
-    brightness: 0.7,
-  },
-  {
-    id: 'spot-galerie',
-    name: 'Galerienhof',
-    description: 'A covered passage. Walk slowly — the acoustics are generous.',
-    dLat: 0.0006,
-    dLng: -0.0014,
-    baseSongId: 'moonlight-sonata',
-    tone: 'melancholy',
-    tempo: 0.9,
-    brightness: 0.3,
-  },
-  {
-    id: 'spot-platznord',
-    name: 'Platznord',
-    description: 'A wide open plaza. Stand still and listen for a moment.',
-    dLat: -0.0009,
-    dLng: -0.0011,
-    baseSongId: 'eine-kleine-nachtmusik',
-    tone: 'bright',
-    tempo: 1.1,
-    brightness: 0.8,
   },
 ]
 
@@ -90,15 +80,13 @@ const DEMO_SPOTS: MusicSpot[] = OFFSETS.map((o) => ({
   id: o.id,
   name: o.name,
   description: o.description,
-  lat: DEMO_CENTER.lat + o.dLat,
-  lng: DEMO_CENTER.lng + o.dLng,
+  lat: o.lat,
+  lng: o.lng,
   // 15 m radius per the design; one-time collection.
   radiusM: 15,
   baseSongId: o.baseSongId,
   mood: {
     tone: o.tone,
-    tempo: o.tempo,
-    brightness: o.brightness,
   },
 }))
 

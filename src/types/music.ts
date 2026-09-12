@@ -42,7 +42,7 @@ export interface MusicSpot {
 }
 
 /** The set of CC0 "base songs" shipped in `public/music/`. */
-export type BaseSongId = 'moonlight-sonata' | 'eine-kleine-nachtmusik'
+export type BaseSongId = 'Wolf - Wandererlied' | 'Schubert - An die Musik' | 'Bruckner - 4th, finale' | 'Schubert - Schwanenlied' | 'Strauss - Zarathustra'
 
 /**
  * A piece the player has collected. Persisted to IndexedDB (see lib/db.ts).
