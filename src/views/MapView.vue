@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-  type Ref,
-} from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 import {
   GlobeControl,
   Marker,
@@ -44,7 +37,12 @@ function resolveCoords(
   }
   const lat = typeof c.latitude === 'number' ? c.latitude : c.lat
   const lng = typeof c.longitude === 'number' ? c.longitude : c.lng
-  if (typeof lat !== 'number' || !Number.isFinite(lat) || typeof lng !== 'number' || !Number.isFinite(lng)) {
+  if (
+    typeof lat !== 'number' ||
+    !Number.isFinite(lat) ||
+    typeof lng !== 'number' ||
+    !Number.isFinite(lng)
+  ) {
     return null
   }
   const accuracy = typeof c.accuracy === 'number' && Number.isFinite(c.accuracy) ? c.accuracy : null
@@ -126,9 +124,7 @@ onBeforeUnmount(() => {
   spotMarkers.clear()
 })
 
-const hasCollectable = computed(() =>
-  spots.value.some((s) => s.status === 'collectable'),
-)
+const hasCollectable = computed(() => spots.value.some((s) => s.status === 'collectable'))
 
 // Demo center (Weißsee, Berchtesgaden) — the map's initial view.
 // MapLibre uses [lng, lat] order (matches GeoJSON) — the reverse of Leaflet.
@@ -224,7 +220,10 @@ function initMap(): void {
     // GPS-accuracy ring: a fill layer over a GeoJSON circle. MapLibre has no
     // Leaflet-style `L.circle`, so the geometry is a GeoJSON feature we rewrite
     // on each position update (see the watcher below).
-    m.addSource(ACCURACY_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+    m.addSource(ACCURACY_SOURCE, {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    })
     m.addLayer({
       id: 'accuracy-fill',
       type: 'fill',
@@ -245,7 +244,8 @@ function initMap(): void {
       const fixed = resolveCoords(pos.coords)
       if (fixed) {
         playerMarker?.setLngLat([fixed.lng, fixed.lat])
-        const src = m.getSource(ACCURACY_SOURCE) as unknown as { setData: (d: unknown) => void } | undefined
+        const src = m.getSource(ACCURACY_SOURCE) as unknown as
+          { setData: (d: unknown) => void } | undefined
         if (src) {
           void src.setData({
             type: 'FeatureCollection',
@@ -264,14 +264,10 @@ function initMap(): void {
 // Build a GeoJSON polygon approximating a circle (great-circle precision is
 // unnecessary at ≤30 m). `unknown` return keeps the type-checker happy without
 // importing the full GeoJSON type graph; `GeoJSONSource.setData` accepts it.
-function circleFeature(
-  lng: number,
-  lat: number,
-  radiusM: number,
-): unknown {
+function circleFeature(lng: number, lat: number, radiusM: number): unknown {
   const latR = (lat * Math.PI) / 180
-  const dLat = (radiusM / 111320) * 180 / Math.PI
-  const dLng = (radiusM / (111320 * Math.cos(latR))) * 180 / Math.PI
+  const dLat = ((radiusM / 111320) * 180) / Math.PI
+  const dLng = ((radiusM / (111320 * Math.cos(latR))) * 180) / Math.PI
   const ring: number[][] = []
   for (let i = 0; i <= 32; i++) {
     const a = (i / 32) * 2 * Math.PI
@@ -352,14 +348,23 @@ watch(
 
     // Move the player marker + rewrite the accuracy ring geometry.
     playerMarker?.setLngLat(ll)
-    const src = map.getSource(ACCURACY_SOURCE) as unknown as { setData: (d: unknown) => void } | undefined
+    const src = map.getSource(ACCURACY_SOURCE) as unknown as
+      { setData: (d: unknown) => void } | undefined
     if (src) {
-      void src.setData({ type: 'FeatureCollection', features: [circleFeature(lng, lat, accuracy ?? 0)] })
+      void src.setData({
+        type: 'FeatureCollection',
+        features: [circleFeature(lng, lat, accuracy ?? 0)],
+      })
     }
 
     // Auto-center only until the user takes over by panning.
     if (!userHasPanned) {
-      map.flyTo({ center: ll, zoom: Math.max(map.getZoom(), INITIAL_ZOOM), speed: 1.5, essential: true })
+      map.flyTo({
+        center: ll,
+        zoom: Math.max(map.getZoom(), INITIAL_ZOOM),
+        speed: 1.5,
+        essential: true,
+      })
     }
 
     // Proximity → collectable (one-way: unclaimed -> collectable).
@@ -485,7 +490,10 @@ function onPreview(spot: MusicSpot): void {
 
     <!-- Geolocation status banner (only when there is a problem). -->
     <transition name="fade">
-      <div v-if="geo.state.value === 'denied' || geo.state.value === 'unavailable'" class="geo-banner">
+      <div
+        v-if="geo.state.value === 'denied' || geo.state.value === 'unavailable'"
+        class="geo-banner"
+      >
         <span>🛰️</span>
         <span>{{ geo.error ?? 'Location unavailable.' }}</span>
       </div>
@@ -516,7 +524,10 @@ function onPreview(spot: MusicSpot): void {
       :busy="collecting"
       @collect="onKeepSpot"
       @preview="onPreview"
-      @close="pendingSpot = null; revealDone = false"
+      @close="
+        pendingSpot = null,
+        revealDone = false
+      "
     />
 
     <!--
@@ -539,11 +550,7 @@ function onPreview(spot: MusicSpot): void {
     </Teleport>
 
     <!-- Collection sheet. -->
-    <CollectionSheet
-      :open="sheetOpen"
-      :pieces="collected"
-      @close="sheetOpen = false"
-    />
+    <CollectionSheet :open="sheetOpen" :pieces="collected" @close="sheetOpen = false" />
   </div>
 </template>
 
@@ -560,6 +567,25 @@ function onPreview(spot: MusicSpot): void {
   position: absolute;
   inset: 0;
   z-index: 0;
+}
+
+/* --- Spot popup --- */
+:global(.spot-popup) {
+  color: #1f2937;
+
+  font-size: 0.95rem;
+
+  line-height: 1.5;
+}
+
+:global(.spot-popup strong) {
+  color: #111827;
+
+  font-size: 1.1rem;
+}
+
+:global(.spot-popup .badge) {
+  color: #fff;
 }
 
 /* --- Geolocation status banner --- */
@@ -633,7 +659,8 @@ function onPreview(spot: MusicSpot): void {
 }
 
 @keyframes pulse-fab {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 10px 30px rgba(79, 70, 229, 0.45);
   }
   50% {
@@ -658,7 +685,8 @@ function onPreview(spot: MusicSpot): void {
 }
 
 @keyframes player-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35);
   }
   50% {
@@ -716,11 +744,16 @@ function onPreview(spot: MusicSpot): void {
 }
 
 @keyframes spot-pulse {
-  0%, 100% {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(245, 158, 11, 0.6);
+  0%,
+  100% {
+    box-shadow:
+      0 4px 10px rgba(0, 0, 0, 0.3),
+      0 0 0 0 rgba(245, 158, 11, 0.6);
   }
   50% {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 0 14px rgba(245, 158, 11, 0);
+    box-shadow:
+      0 4px 10px rgba(0, 0, 0, 0.3),
+      0 0 0 14px rgba(245, 158, 11, 0);
   }
 }
 
