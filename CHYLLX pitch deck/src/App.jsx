@@ -7,77 +7,21 @@ import TopographicField from './components/TopographicField.jsx';
 import GlobeScene from './components/GlobeScene.jsx';
 import AlpineScene from './components/AlpineScene.jsx';
 
+import {
+  topbar,
+  logo,
+  hero,
+  problem,
+  motivation,
+  core,
+  demo,
+  solution,
+  railItems,
+  teamNames,
+  finale,
+} from './content.js';
+
 gsap.registerPlugin(ScrollTrigger);
-
-
-/* =========================================================
-   EDITABLE CONTENT
-   ========================================================= */
-
-const chapters = [
-  {
-    number: '02',
-    title: 'We travel with our eyes',
-    text: 'Travel platforms are overwhelmingly visual. Maps show us where to go. Social media shows us what to photograph. But the sounds that make a place feel alive are usually left out.',
-  },
-  {
-    number: '03',
-    title: 'And those sounds are disappearing',
-    text: 'Glaciers retreat. Local traditions evolve. Natural environments change. With them, unique soundscapes can disappear undocumented.',
-  },
-  {
-    number: '04',
-    title: 'What if sound became a reason to explore?',
-    text: 'TabiKlang turns the world into a playable sound map. Across the globe, locations become hidden Sound Beacons that players travel to discover and unlock.',
-  },
-  {
-    number: '05',
-    title: 'Explore',
-    text: 'Find sounds hidden in the real world. Some Sound Beacons live in famous destinations. Others deliberately lead players away from the obvious tourist path.',
-  },
-  {
-    number: '06',
-    title: 'Travel & capture',
-    text: 'You have to be there to unlock it. Enter a Sound Beacon’s GPS radius to collect its soundscape as ambience, rhythm, melody and texture.',
-  },
-  {
-    number: '07',
-    title: 'Austria becomes a collection',
-    text: 'Every journey builds your Sound Passport. Vienna, the Danube, Hohe Tauern and Alpine villages become collectible pieces of the places you experienced.',
-  },
-  {
-    number: '08',
-    title: 'Places can be combined',
-    text: 'Your journey becomes a composition. TabiKlang’s fusion system adapts collected stems so sounds from different places can be layered into new soundscapes.',
-  },
-  {
-    number: '09',
-    title: 'Exploration has value',
-    text: 'The rarest sounds are not necessarily in the busiest places. Legendary Sound Beacons can reward players for exploring lesser-known destinations.',
-  },
-  {
-    number: '10',
-    title: 'From Austria to the world',
-    text: 'Austria is only the first journey. One game can connect thousands of places, cultures and sound collections across the globe.',
-  },
-];
-
-const railItems = [
-  ['01', 'INTRO'],
-  ['02', 'PROBLEM'],
-  ['03', 'WHY NOW'],
-  ['04', 'THE IDEA'],
-  ['05', 'EXPLORE'],
-  ['06', 'CAPTURE'],
-  ['07', 'PASSPORT'],
-  ['08', 'FUSION'],
-  ['09', 'IMPACT'],
-  ['10', 'THE WORLD'],
-  ['11', 'DEMO'],
-  ['12', 'CLOSE'],
-];
-
-const teamNames = 'CHYLLX — Name / Name / Name';
 
 
 /* =========================================================
@@ -106,8 +50,8 @@ function TabiKlangLogo({ compact = false }) {
 
       {!compact && (
         <div className="logo-word">
-          <b>TabiKlang</b>
-          <span>Journey into soundscapes</span>
+          <b>{logo.title}</b>
+          <span>{logo.subtitle}</span>
         </div>
       )}
     </div>
@@ -118,27 +62,20 @@ function SoundPassport() {
   return (
     <div className="passport-card">
       <div className="passport-top">
-        <span>Sound Passport</span>
-        <span>AT / 03</span>
+        <span>{soundPassport.title}</span>
+        <span>{soundPassport.code}</span>
       </div>
 
-      <div className="passport-item">
-        <b>Vienna</b>
-        <span>Melody</span>
-        <i>Unlocked</i>
-      </div>
-
-      <div className="passport-item">
-        <b>Danube</b>
-        <span>Ambience</span>
-        <i>Unlocked</i>
-      </div>
-
-      <div className="passport-item active">
-        <b>Hohe Tauern</b>
-        <span>Glacier texture</span>
-        <i>Legendary</i>
-      </div>
+      {soundPassport.items.map((item) => (
+        <div
+          className={`passport-item ${item.active ? 'active' : ''}`}
+          key={item.name}
+        >
+          <b>{item.name}</b>
+          <span>{item.type}</span>
+          <i>{item.status}</i>
+        </div>
+      ))}
 
       <div className="wave-row">
         {Array.from({ length: 34 }, (_, i) => (
@@ -153,11 +90,9 @@ function SoundPassport() {
 }
 
 function Mixer() {
-  const tracks = ['VIENNA / melody', 'DANUBE / ambience', 'TAUERN / texture'];
-
   return (
     <div className="mixer">
-      {tracks.map((label, i) => (
+      {mixer.tracks.map((label, i) => (
         <div className="mix-row" key={label}>
           <span>{label}</span>
           <div className="track">
@@ -167,7 +102,7 @@ function Mixer() {
       ))}
 
       <div className="fusion-orb">
-        <span>FUSE</span>
+        <span>{mixer.fuseLabel}</span>
       </div>
     </div>
   );
@@ -177,9 +112,9 @@ function ChapterExtra({ index }) {
   if (index === 0) {
     return (
       <div className="statement">
-        We remember what places look like.
+        {statement.line1}
         <br />
-        <em>But rarely what they sound like.</em>
+        <em>{statement.line2}</em>
       </div>
     );
   }
@@ -187,7 +122,7 @@ function ChapterExtra({ index }) {
   if (index === 2) {
     return (
       <div className="beacon-label">
-        THE WORLD BECOMES A MAP OF <strong>SOUND BEACONS</strong>
+        {beaconLabelWorld.prefix} <strong>{beaconLabelWorld.strong}</strong>
       </div>
     );
   }
@@ -195,9 +130,11 @@ function ChapterExtra({ index }) {
   if (index === 3) {
     return (
       <div className="beacon-label">
-        FAMOUS DESTINATION <strong>COMMON SOUND</strong>
+        {beaconLabelDestinations.line1.prefix}{' '}
+        <strong>{beaconLabelDestinations.line1.strong}</strong>
         <br />
-        HIDDEN DESTINATION <strong>LEGENDARY SOUND</strong>
+        {beaconLabelDestinations.line2.prefix}{' '}
+        <strong>{beaconLabelDestinations.line2.strong}</strong>
       </div>
     );
   }
@@ -212,28 +149,26 @@ function ChapterExtra({ index }) {
             <span className="unlock-beacon" />
 
             <div className="unlock-copy">
-              <small>LOCATION REACHED</small>
+              <small>{locationUnlock.small}</small>
               <b>
-                SOUNDSCAPE
+                {locationUnlock.boldLine1}
                 <br />
-                UNLOCKED
+                {locationUnlock.boldLine2}
               </b>
             </div>
           </div>
 
           <div className="unlock-stems">
-            <span>AMBIENCE</span>
-            <span>RHYTHM</span>
-            <span>MELODY</span>
-            <span>TEXTURE</span>
+            {locationUnlock.stems.map((stem) => (
+              <span key={stem}>{stem}</span>
+            ))}
           </div>
         </div>
 
         <div className="layer-stack">
-          <span>AMBIENCE</span>
-          <span>RHYTHM</span>
-          <span>MELODY</span>
-          <span>TEXTURE</span>
+          {locationUnlock.stems.map((stem) => (
+            <span key={stem}>{stem}</span>
+          ))}
         </div>
       </>
     );
@@ -245,10 +180,10 @@ function ChapterExtra({ index }) {
   if (index === 7) {
     return (
       <div className="rarity-scale">
-        <span>FAMOUS PLACE</span>
+        <span>{raritySale.famous}</span>
         <i />
-        <strong>HIDDEN PLACE</strong>
-        <b>LEGENDARY</b>
+        <strong>{raritySale.hidden}</strong>
+        <b>{raritySale.legendary}</b>
       </div>
     );
   }
@@ -256,10 +191,10 @@ function ChapterExtra({ index }) {
   if (index === 8) {
     return (
       <div className="world-example">
-        <span>AUSTRIA</span>
+        <span>{worldExample.from}</span>
         <i>→</i>
-        <span>JAPAN</span>
-        <small>Kyoto · Yamanashi · regional music traditions</small>
+        <span>{worldExample.to}</span>
+        <small>{worldExample.detail}</small>
       </div>
     );
   }
@@ -627,15 +562,15 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <TabiKlangLogo compact />
-          <span>TABIKLANG</span>
+          <span>{topbar.brand}</span>
         </div>
 
         <div className="topbar-center">
-          Journey into soundscapes
+          {topbar.center}
         </div>
 
         <div className="topbar-end">
-          Austria / World
+          {topbar.end}
         </div>
       </header>
 
@@ -646,12 +581,12 @@ export default function App() {
       {/* 01 — Hero */}
       <section
         className="hero chapter hero-reference"
-        aria-label="TabiKlang — Journey into soundscapes"
+        aria-label={hero.alt}
       >
         <img
           className="hero-reference-image"
           src="/tabiklang-hero.png"
-          alt="TabiKlang — Journey into soundscapes"
+          alt={hero.alt}
         />
 
         <div className="hero-reference-shade" />
@@ -679,13 +614,12 @@ export default function App() {
       {/* 11 — Demo */}
       <section className="chapter demo-chapter">
         <div className="chapter-copy demo-copy">
-          <div className="chapter-no">11</div>
+          <div className="chapter-no">{demo.number}</div>
 
-          <h2>See TabiKlang in action.</h2>
+          <h2>{demo.heading}</h2>
 
           <p>
-            From discovering a Sound Beacon to capturing a place,
-            building a Sound Passport and combining what you collect.
+            {demo.text}
           </p>
 
           {/* Current placeholder 
@@ -713,22 +647,19 @@ export default function App() {
       <section className="chapter finale">
         <div className="chapter-copy finale-copy">
           <div className="eyebrow">
-            12 · TabiKlang
+            {finale.eyebrow}
           </div>
 
-          <h2>Every place has a sound.</h2>
+          <h2>{finale.heading}</h2>
 
           <p>
-            TabiKlang gives you a reason to find it. Explore real
-            places, capture their soundscapes, build your collection
-            and turn your journey into something new.
+            {finale.text}
           </p>
 
           <div className="final-grid">
-            <span>EXPLORE</span>
-            <span>TRAVEL</span>
-            <span>CAPTURE</span>
-            <span>REMIX</span>
+            {finale.grid.map((label) => (
+              <span key={label}>{label}</span>
+            ))}
           </div>
 
           <div className="team">
