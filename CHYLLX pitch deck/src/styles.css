@@ -520,6 +520,50 @@
 .composer-portrait::before,
 .composer-portrait::after{pointer-events:none}
 
+/* Austria vector badge — gradually revealed as the intro/hero scrolls.
+   position:fixed + a real (non site-shell-nested) place in the tree so it renders
+   above the hero's opaque background instead of behind it in the fixed-stage. */
+.austria-badge{
+  position:fixed;
+  right:8vw;
+  top:18vh;
+  width:min(18vw,240px);
+  opacity:0;
+  z-index:6;
+  will-change:transform,opacity;
+  filter:drop-shadow(0 20px 60px rgba(0,0,0,.45));
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+@media(max-width:900px){
+  .austria-badge{width:min(30vw,190px);right:5vw;top:14vh}
+}
+@media(max-width:600px){
+  .austria-badge{display:none}
+}
+
+/* Cow illustration — mirrors the Austria badge: same reveal/fade, left side. */
+.cow-badge{
+  position:fixed;
+  left:8vw;
+  top:18vh;
+  width:min(18vw,240px);
+  opacity:0;
+  z-index:6;
+  will-change:transform,opacity;
+  filter:drop-shadow(0 20px 60px rgba(0,0,0,.45));
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+@media(max-width:900px){
+  .cow-badge{width:min(30vw,190px);left:5vw;top:14vh}
+}
+@media(max-width:600px){
+  .cow-badge{display:none}
+}
+
 /* =========================================================
    DEMO VIDEO — fitted for presentation viewport
    ========================================================= */
@@ -586,4 +630,6 @@
 .hero-copy{
   text-align:center;
   margin:0 auto;
+  position:relative;
+  z-index:2;
 }

@@ -7,6 +7,7 @@ import TopographicField from './components/TopographicField.jsx';
 import GlobeScene from './components/GlobeScene.jsx';
 import AlpineScene from './components/AlpineScene.jsx';
 import StackSpread from './components/ui/stack-spread.jsx';
+import MountainAscii from './components/ui/mountain-ascii.jsx';
 
 import {
   topbar,
@@ -111,6 +112,8 @@ export default function App() {
     const setDanube = q('.scene-danube');
     const setVienna = q('.scene-vienna');
     const setPortrait = q('.composer-portrait');
+    const setAustria = q('.austria-badge');
+    const setCow = q('.cow-badge');
     const setGlobe = q('.globe-layer');
     const setTopo = q('.topo');
     const setBeacon = q('.beacon');
@@ -249,6 +252,34 @@ export default function App() {
         },
       });
 
+      // Austria badge: only while the Intro/hero section itself is on screen —
+      // tied to the hero's own scroll range, not total page progress, so it
+      // doesn't stay stuck on-screen once later sections push it out of range.
+      const heroEl = root.current?.querySelector('.hero-reference');
+      if (heroEl) {
+        ScrollTrigger.create({
+          trigger: heroEl,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true,
+          onUpdate: (self) => {
+            const revealP = smooth(self.progress, 0, 0.12);
+            const fadeOutP = smooth(self.progress, 0.7, 0.98);
+            const introReveal = clamp(revealP - fadeOutP);
+
+            setAustria({
+              opacity: introReveal,
+              transform: `translate3d(0,${(1 - introReveal) * 16}px,0) scale(${0.94 + introReveal * 0.06})`,
+            });
+
+            setCow({
+              opacity: introReveal,
+              transform: `translate3d(0,${(1 - introReveal) * 16}px,0) scale(${0.94 + introReveal * 0.06})`,
+            });
+          },
+        });
+      }
+
       gsap.utils.toArray('.chapter-copy').forEach((el) => {
         gsap.fromTo(
           el,
@@ -286,6 +317,7 @@ export default function App() {
             }
           );
         });
+
     }, root);
 
     // Gentle presentation settle
@@ -429,6 +461,9 @@ export default function App() {
         </div>
       </div>
 
+      <img className="austria-badge" src="/austria-badge.png" alt="Austria" />
+      <img className="cow-badge" src="/cow-badge.png" alt="" />
+
       {/* Top bar */}
       <header className="topbar">
         <div className="brand">
@@ -450,6 +485,8 @@ export default function App() {
         className="hero chapter hero-reference"
         aria-label={hero.alt}
       >
+        <MountainAscii src="/journey/heart-lake.png" />
+
         <div className="chapter-copy hero-copy">
           <h1>{hero.title}</h1>
           <p>{hero.tagline}</p>
