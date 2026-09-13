@@ -19,7 +19,7 @@ import {
 import { useGeolocation } from '@/composables/useGeolocation'
 import { createSimFeed } from '@/lib/demoSim'
 import { spotRepository } from '@/lib/spotRepository'
-import { clearAllPieces, deletePiece, getAllPieces, isCollected, savePiece } from '@/lib/db'
+import { getAllPieces, isCollected, savePiece } from '@/lib/db'
 import { renderForSpot, toCollectedPiece } from '@/lib/audio'
 import { isWithinRadius, type LatLng } from '@/lib/geo'
 
@@ -54,7 +54,6 @@ function resolveCoords(
 import type { CollectedPiece, MusicSpot } from '@/types/music'
 import CollectModal from '@/components/CollectModal.vue'
 import CollectionSheet from '@/components/CollectionSheet.vue'
-import DebugPanel from '@/components/DebugPanel.vue'
 
 // --- state ---
 const mapEl = ref<HTMLElement | null>(null)
@@ -64,81 +63,55 @@ const spots: Ref<MusicSpot[]> = ref([])
 const pendingSpot = ref<MusicSpot | null>(null)
 const collecting = ref(false)
 const sheetOpen = ref(false)
-// Dev-only debug panel (force-collect / reset any spot, bypassing GPS
-// proximity). Never rendered in a production build.
-const debugOpen = ref(false)
-const isDev = import.meta.env.DEV
 
 const simFeed = createSimFeed()
 const geo = useGeolocation({ feed: simFeed })
 
-// --- Demo / GPS-simulation mode -------------------------------------------
-// When real geolocation is denied, unavailable, or we just want to test the
-// collect flow without moving, we drive the *same* reactive position the app
-// already consumes through an injected feed. This reuses the entire marker +
-// accuracy-ring + proximity pipeline with zero duplication — the only thing we
-// change is the source of the coordinate.
-//
-//   simActive   — a virtual position is being driven (teleport / orbit).
-//   simOrbiting — the virtual player is moving in a slow circle around
-//                 DEMO_CENTER, so as it sweeps past each spot the spot flips
-//                 unclaimed → collectable (and the Collect FAB appears).
-//
-// The sim activates on demand (the "Teleport to a spot" panel) and, as a
-// safety net, also arms itself automatically when real GPS is denied or
-// unavailable so the app stays testable headless. Real GPS always wins: the
-// moment a genuine fix arrives we stop the sim and follow the user instead.
-const simActive = ref(false)
-const simOrbiting = ref(false)
-const simSpeed = ref(1)
+// --- Debug: fly-to-key shortcuts ------------------------------------------
+// There is no demo panel anymore. Position is ALWAYS driven through the sim
+// feed (even when real GPS is up), so keyboard shortcuts can fly the player
+// to the first 3 spots from anywhere. This is a test-only convenience to
+// exercise the collect flow without physically walking; a real user's GPS
+// would be the position source in production.
+//   1 / 2 / 3  →  fly the player to spots[0] / [1] / [2]
+// The emitted fix flows through the same proximity watcher as a real GPS fix,
+// so the spot flips unclaimed → collectable and the Collect FAB appears.
+const FLY_KEYS = ['1', '2', '3'] as const
 
-// The feed's rAF loop handles the orbit; this just tracks whether we've asked
-// for it (so the UI can show a stop control) — we don't manage the timer here.
-function startOrbit(): void {
-  if (simOrbiting.value) return
-  simActive.value = true
-  simOrbiting.value = true
-  // Radius/period are tuned so the sweep passes *through* the demo spots
-  // (they're placed a few hundred meters from DEMO_CENTER), which is exactly
-  // what triggers the proximity → collectable transition.
-  simFeed.startOrbit(
-    { lng: DEMO_CENTER[0], lat: DEMO_CENTER[1] },
-    { radiusM: 320, periodS: 40 / simSpeed.value },
-  )
-}
-
-function stopOrbit(): void {
-  simOrbiting.value = false
-  simFeed.stopOrbit()
-}
-
-// Teleport the virtual player to a specific spot's coordinates (one-shot fix).
-// The proximity watcher then flips that spot to collectable and the Collect FAB
-// appears — no need to physically walk to it.
-function teleportToSpot(spot: MusicSpot): void {
-  simActive.value = true
-  stopOrbit()
+function flyToSpot(spot: MusicSpot): void {
   simFeed.emit({ lat: spot.lat, lng: spot.lng, accuracy: 5 })
-  if (map) {
-    map.flyTo({
-      center: [spot.lng, spot.lat],
-      zoom: Math.max(map.getZoom(), INITIAL_ZOOM + 2),
-      speed: 1.2,
-      essential: true,
-    })
-  }
+  map?.flyTo({
+    center: [spot.lng, spot.lat],
+    zoom: Math.max(map.getZoom(), INITIAL_ZOOM + 2),
+    speed: 1.2,
+    essential: true,
+  })
 }
 
-// When real GPS comes up, it wins: stop the sim so we track the real user.
-watch(
-  () => geo.state.value,
-  (s) => {
-    if (s === 'ready') {
-      simActive.value = false
-      stopOrbit()
-    }
-  },
-)
+function onKeydown(e: KeyboardEvent): void {
+  if (!FLY_KEYS.includes(e.key as (typeof FLY_KEYS)[number])) return
+  const spot = spots.value[Number(e.key) - 1]
+  if (spot) flyToSpot(spot)
+}
+
+onMounted(() => {
+  initMap()
+  void loadSpots()
+  void loadCollection()
+  // Always feed through the sim so the fly-to keys work regardless of GPS.
+  geo.start()
+  window.addEventListener('keydown', onKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  geo.stop()
+  // `map.remove()` tears down markers, sources, layers, and controls.
+  map?.remove()
+  map = null
+  playerMarker = null
+  spotMarkers.clear()
+})
 
 const hasCollectable = computed(() =>
   spots.value.some((s) => s.status === 'collectable'),
@@ -146,8 +119,7 @@ const hasCollectable = computed(() =>
 
 // Demo center (Weißsee, Berchtesgaden) — the map's initial view.
 // MapLibre uses [lng, lat] order (matches GeoJSON) — the reverse of Leaflet.
-// 47.1372927,12.6238395
-const DEMO_CENTER: [number, number] = [12.6238395, 47.1372927]
+const DEMO_CENTER: [number, number] = [138.4478818, 35.5042671]
 const INITIAL_ZOOM = 14
 
 // --- module-level (non-reactive) MapLibre handles ---
@@ -435,60 +407,6 @@ function openCollectModal(): void {
   const target = spots.value.find((s) => s.status === 'collectable')
   if (target) pendingSpot.value = target
 }
-
-/** Delete a single collected piece (from the collection sheet's 🗑 button). */
-async function onDeletePiece(spotId: string): Promise<void> {
-  await deletePiece(spotId)
-  collected.value = await getAllPieces()
-  const spot = spots.value.find((s) => s.id === spotId)
-  if (spot) spot.status = 'unclaimed'
-  refreshSpotMarkers()
-}
-
-/** Wipe the entire collection (from the collection sheet's "Clear all"). */
-async function onClearAll(): Promise<void> {
-  await clearAllPieces()
-  collected.value = []
-  for (const s of spots.value) s.status = 'unclaimed'
-  refreshSpotMarkers()
-}
-
-/** Debug: collect a spot immediately, ignoring GPS proximity. */
-async function onDebugForceCollect(spot: MusicSpot): Promise<void> {
-  await onCollect(spot)
-}
-
-/** Debug: undo a collection and put the spot back to `unclaimed`. */
-async function onDebugReset(spot: MusicSpot): Promise<void> {
-  await onDeletePiece(spot.id)
-}
-
-onMounted(() => {
-  initMap()
-  void loadSpots()
-  void loadCollection()
-  geo.start()
-
-  // Headless / permission-denied safety net: if real GPS is unavailable, arm
-  // the sim immediately so the app stays testable (the user can also open the
-  // teleport panel any time). Real GPS always wins: the watcher above stops the
-  // sim the moment a genuine fix arrives.
-  if (geo.state.value === 'unavailable' || geo.state.value === 'denied') {
-    simActive.value = true
-    startOrbit()
-  }
-})
-
-onBeforeUnmount(() => {
-  // Stop the demo sim first so its rAF loop doesn't outlive the component.
-  stopOrbit()
-  geo.stop()
-  // `map.remove()` tears down markers, sources, layers, and controls.
-  map?.remove()
-  map = null
-  playerMarker = null
-  spotMarkers.clear()
-})
 </script>
 
 <template>
@@ -520,47 +438,6 @@ onBeforeUnmount(() => {
       ♪ <span>{{ collected.length }}</span>
     </button>
 
-    <!-- Demo / GPS-simulation controls (bottom-right). Lets you drive the
-         player marker without physically moving: teleport to any spot, or let
-         it orbit slowly past each one. Real GPS always overrides this. -->
-    <div class="demo-panel" role="group" aria-label="Demo GPS simulation">
-      <div class="demo-row">
-        <span class="demo-title">Demo GPS</span>
-        <button
-          class="demo-btn"
-          type="button"
-          :class="{ active: simOrbiting }"
-          @click="simOrbiting ? stopOrbit() : startOrbit()"
-        >
-          {{ simOrbiting ? '⏸ Orbit' : '▶ Orbit' }}
-        </button>
-      </div>
-      <div class="demo-hint">Teleport to a spot, or orbit to sweep past them:</div>
-      <div class="demo-list">
-        <button
-          v-for="s in spots"
-          :key="s.id"
-          class="demo-teleport"
-          type="button"
-          @click="teleportToSpot(s)"
-        >
-          <span class="demo-dot" :data-status="s.status"></span>
-          <span class="demo-name">{{ s.name }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Debug FAB (dev-only): force-collect / reset spots without GPS. -->
-    <button
-      v-if="isDev"
-      class="debug-fab"
-      type="button"
-      title="Debug: force-collect / reset spots"
-      @click="debugOpen = true"
-    >
-      🐞
-    </button>
-
     <!-- Collect modal. -->
     <CollectModal
       v-if="pendingSpot"
@@ -576,18 +453,6 @@ onBeforeUnmount(() => {
       :open="sheetOpen"
       :pieces="collected"
       @close="sheetOpen = false"
-      @delete="onDeletePiece"
-      @clear-all="onClearAll"
-    />
-
-    <!-- Debug panel (dev-only). -->
-    <DebugPanel
-      v-if="isDev"
-      :open="debugOpen"
-      :spots="spots"
-      @close="debugOpen = false"
-      @force-collect="onDebugForceCollect"
-      @reset="onDebugReset"
     />
   </div>
 </template>
@@ -657,27 +522,6 @@ onBeforeUnmount(() => {
   font-size: 0.85rem;
 }
 
-/* --- Debug FAB (dev-only, bottom-right above the nav controls) --- */
-.debug-fab {
-  position: absolute;
-  right: 1rem;
-  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-  z-index: 900;
-  width: 2.8rem;
-  height: 2.8rem;
-  border: none;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #7c2d12, #451a03);
-  color: #fff;
-  font-size: 1.2rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-}
-
-.debug-fab:active {
-  transform: scale(0.94);
-}
-
 /* --- Collect FAB (bottom-center, appears when in range) --- */
 .collect-fab {
   position: absolute;
@@ -705,117 +549,6 @@ onBeforeUnmount(() => {
   50% {
     box-shadow: 0 10px 40px rgba(79, 70, 229, 0.75);
   }
-}
-
-/* --- Demo / GPS-simulation panel (bottom-right) --- */
-.demo-panel {
-  position: absolute;
-  right: 0.75rem;
-  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
-  z-index: 900;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-height: 55vh;
-  overflow-y: auto;
-  padding: 0.7rem;
-  border-radius: 0.9rem;
-  background: rgba(15, 23, 42, 0.92);
-  color: #e2e8f0;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-
-.demo-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.demo-title {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #94a3b8;
-}
-
-.demo-btn {
-  margin-left: auto;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  border-radius: 999px;
-  background: transparent;
-  color: #e2e8f0;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
-}
-
-.demo-btn:hover {
-  background: rgba(148, 163, 184, 0.15);
-}
-
-.demo-btn.active {
-  border-color: #f59e0b;
-  color: #fbbf24;
-  background: rgba(245, 158, 11, 0.12);
-}
-
-.demo-hint {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  line-height: 1.3;
-}
-
-.demo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.demo-teleport {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 0.6rem;
-  background: transparent;
-  color: #e2e8f0;
-  font-size: 0.82rem;
-  text-align: left;
-  cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
-}
-
-.demo-teleport:hover {
-  background: rgba(148, 163, 184, 0.12);
-  border-color: rgba(148, 163, 184, 0.5);
-}
-
-.demo-dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: #64748b;
-  flex: none;
-}
-
-.demo-dot[data-status='collectable'] {
-  background: #f59e0b;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
-}
-
-.demo-dot[data-status='collected'] {
-  background: #10b981;
-}
-
-.demo-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* --- Player marker --- */
@@ -890,76 +623,6 @@ onBeforeUnmount(() => {
 :global(.spot-collected .spot-dot) {
   background: #10b981;
   opacity: 0.75;
-}
-
-/* MapLibre's default popup is a white card that inherits body text color.
-   In dark (or scaffold light-gray) schemes that becomes gray-on-white. */
-:global(.maplibregl-popup-content) {
-  background: #0f172a;
-  color: #f8fafc;
-  border-radius: 12px;
-  padding: 12px 14px 14px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-}
-
-:global(.maplibregl-popup-close-button) {
-  color: #e2e8f0;
-  font-size: 1.1rem;
-  padding: 4px 8px;
-}
-
-:global(.maplibregl-popup-close-button:hover) {
-  color: #fff;
-  background: transparent;
-}
-
-:global(.maplibregl-popup-anchor-bottom .maplibregl-popup-tip) {
-  border-top-color: #0f172a;
-}
-:global(.maplibregl-popup-anchor-top .maplibregl-popup-tip) {
-  border-bottom-color: #0f172a;
-}
-:global(.maplibregl-popup-anchor-left .maplibregl-popup-tip) {
-  border-right-color: #0f172a;
-}
-:global(.maplibregl-popup-anchor-right .maplibregl-popup-tip) {
-  border-left-color: #0f172a;
-}
-
-:global(.spot-popup) {
-  color: #f8fafc;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  max-width: 220px;
-}
-
-:global(.spot-popup strong) {
-  color: #fff;
-  font-weight: 700;
-}
-
-:global(.badge) {
-  display: inline-block;
-  margin-top: 0.45rem;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-:global(.badge-unclaimed) {
-  background: #334155;
-  color: #f1f5f9;
-}
-
-:global(.badge-collectable) {
-  background: #f59e0b;
-  color: #1f2937;
-}
-
-:global(.badge-collected) {
-  background: #10b981;
-  color: #052e16;
 }
 
 @keyframes spot-pulse {
