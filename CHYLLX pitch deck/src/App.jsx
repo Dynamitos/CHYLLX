@@ -1,0 +1,765 @@
+import React, { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
+
+import TopographicField from './components/TopographicField.jsx';
+import GlobeScene from './components/GlobeScene.jsx';
+import AlpineScene from './components/AlpineScene.jsx';
+
+gsap.registerPlugin(ScrollTrigger);
+
+
+/* =========================================================
+   EDITABLE CONTENT
+   ========================================================= */
+
+const chapters = [
+  {
+    number: '02',
+    title: 'We travel with our eyes',
+    text: 'Travel platforms are overwhelmingly visual. Maps show us where to go. Social media shows us what to photograph. But the sounds that make a place feel alive are usually left out.',
+  },
+  {
+    number: '03',
+    title: 'And those sounds are disappearing',
+    text: 'Glaciers retreat. Local traditions evolve. Natural environments change. With them, unique soundscapes can disappear undocumented.',
+  },
+  {
+    number: '04',
+    title: 'What if sound became a reason to explore?',
+    text: 'TabiKlang turns the world into a playable sound map. Across the globe, locations become hidden Sound Beacons that players travel to discover and unlock.',
+  },
+  {
+    number: '05',
+    title: 'Explore',
+    text: 'Find sounds hidden in the real world. Some Sound Beacons live in famous destinations. Others deliberately lead players away from the obvious tourist path.',
+  },
+  {
+    number: '06',
+    title: 'Travel & capture',
+    text: 'You have to be there to unlock it. Enter a Sound Beacon’s GPS radius to collect its soundscape as ambience, rhythm, melody and texture.',
+  },
+  {
+    number: '07',
+    title: 'Austria becomes a collection',
+    text: 'Every journey builds your Sound Passport. Vienna, the Danube, Hohe Tauern and Alpine villages become collectible pieces of the places you experienced.',
+  },
+  {
+    number: '08',
+    title: 'Places can be combined',
+    text: 'Your journey becomes a composition. TabiKlang’s fusion system adapts collected stems so sounds from different places can be layered into new soundscapes.',
+  },
+  {
+    number: '09',
+    title: 'Exploration has value',
+    text: 'The rarest sounds are not necessarily in the busiest places. Legendary Sound Beacons can reward players for exploring lesser-known destinations.',
+  },
+  {
+    number: '10',
+    title: 'From Austria to the world',
+    text: 'Austria is only the first journey. One game can connect thousands of places, cultures and sound collections across the globe.',
+  },
+];
+
+const railItems = [
+  ['01', 'INTRO'],
+  ['02', 'PROBLEM'],
+  ['03', 'WHY NOW'],
+  ['04', 'THE IDEA'],
+  ['05', 'EXPLORE'],
+  ['06', 'CAPTURE'],
+  ['07', 'PASSPORT'],
+  ['08', 'FUSION'],
+  ['09', 'IMPACT'],
+  ['10', 'THE WORLD'],
+  ['11', 'DEMO'],
+  ['12', 'CLOSE'],
+];
+
+const teamNames = 'CHYLLX — Name / Name / Name';
+
+
+/* =========================================================
+   SMALL HELPERS / COMPONENTS
+   ========================================================= */
+
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+
+const smooth = (p, a, b) => {
+  const x = clamp((p - a) / (b - a));
+  return x * x * (3 - 2 * x);
+};
+
+function TabiKlangLogo({ compact = false }) {
+  return (
+    <div className={`tabiklang-logo ${compact ? 'compact' : ''}`} aria-label="TabiKlang">
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r="47" className="logo-ring" />
+        <path d="M26 78 50 42l14 20 10-14 20 30" className="logo-mountain" />
+        <path
+          d="M62 34c14 3 25 14 28 28M64 46c8 2 14 8 16 16M65 57c3 1 5 3 6 6"
+          className="logo-wave"
+        />
+        <circle cx="87" cy="30" r="3.5" className="logo-dot" />
+      </svg>
+
+      {!compact && (
+        <div className="logo-word">
+          <b>TabiKlang</b>
+          <span>Journey into soundscapes</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SoundPassport() {
+  return (
+    <div className="passport-card">
+      <div className="passport-top">
+        <span>Sound Passport</span>
+        <span>AT / 03</span>
+      </div>
+
+      <div className="passport-item">
+        <b>Vienna</b>
+        <span>Melody</span>
+        <i>Unlocked</i>
+      </div>
+
+      <div className="passport-item">
+        <b>Danube</b>
+        <span>Ambience</span>
+        <i>Unlocked</i>
+      </div>
+
+      <div className="passport-item active">
+        <b>Hohe Tauern</b>
+        <span>Glacier texture</span>
+        <i>Legendary</i>
+      </div>
+
+      <div className="wave-row">
+        {Array.from({ length: 34 }, (_, i) => (
+          <span
+            key={i}
+            style={{ height: `${16 + (Math.sin(i * 1.8) + 1) * 18}px` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Mixer() {
+  const tracks = ['VIENNA / melody', 'DANUBE / ambience', 'TAUERN / texture'];
+
+  return (
+    <div className="mixer">
+      {tracks.map((label, i) => (
+        <div className="mix-row" key={label}>
+          <span>{label}</span>
+          <div className="track">
+            <i style={{ width: `${86 - i * 18}%` }} />
+          </div>
+        </div>
+      ))}
+
+      <div className="fusion-orb">
+        <span>FUSE</span>
+      </div>
+    </div>
+  );
+}
+
+function ChapterExtra({ index }) {
+  if (index === 0) {
+    return (
+      <div className="statement">
+        We remember what places look like.
+        <br />
+        <em>But rarely what they sound like.</em>
+      </div>
+    );
+  }
+
+  if (index === 2) {
+    return (
+      <div className="beacon-label">
+        THE WORLD BECOMES A MAP OF <strong>SOUND BEACONS</strong>
+      </div>
+    );
+  }
+
+  if (index === 3) {
+    return (
+      <div className="beacon-label">
+        FAMOUS DESTINATION <strong>COMMON SOUND</strong>
+        <br />
+        HIDDEN DESTINATION <strong>LEGENDARY SOUND</strong>
+      </div>
+    );
+  }
+
+  if (index === 4) {
+    return (
+      <>
+        <div className="location-unlock">
+          <div className="unlock-radar">
+            <i className="unlock-ring ring-a" />
+            <i className="unlock-ring ring-b" />
+            <span className="unlock-beacon" />
+
+            <div className="unlock-copy">
+              <small>LOCATION REACHED</small>
+              <b>
+                SOUNDSCAPE
+                <br />
+                UNLOCKED
+              </b>
+            </div>
+          </div>
+
+          <div className="unlock-stems">
+            <span>AMBIENCE</span>
+            <span>RHYTHM</span>
+            <span>MELODY</span>
+            <span>TEXTURE</span>
+          </div>
+        </div>
+
+        <div className="layer-stack">
+          <span>AMBIENCE</span>
+          <span>RHYTHM</span>
+          <span>MELODY</span>
+          <span>TEXTURE</span>
+        </div>
+      </>
+    );
+  }
+
+  if (index === 5) return <SoundPassport />;
+  if (index === 6) return <Mixer />;
+
+  if (index === 7) {
+    return (
+      <div className="rarity-scale">
+        <span>FAMOUS PLACE</span>
+        <i />
+        <strong>HIDDEN PLACE</strong>
+        <b>LEGENDARY</b>
+      </div>
+    );
+  }
+
+  if (index === 8) {
+    return (
+      <div className="world-example">
+        <span>AUSTRIA</span>
+        <i>→</i>
+        <span>JAPAN</span>
+        <small>Kyoto · Yamanashi · regional music traditions</small>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   APP
+   ========================================================= */
+
+export default function App() {
+  const root = useRef();
+  const progressRef = useRef(0);
+  const activeRef = useRef(0);
+  const railProgressRef = useRef(0);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const lenis = reduce
+      ? null
+      : new Lenis({
+          duration: 1.22,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          smoothWheel: true,
+          wheelMultiplier: 0.78,
+          touchMultiplier: 1.0,
+          syncTouch: false,
+        });
+
+    const raf = (t) => lenis?.raf(t * 1000);
+
+    if (lenis) {
+      gsap.ticker.add(raf);
+      lenis.on('scroll', ScrollTrigger.update);
+      gsap.ticker.lagSmoothing(0);
+    }
+
+    const q = (selector) => gsap.quickSetter(selector, 'css');
+
+    const setAlps = q('.scene-alps');
+    const setGlacier = q('.scene-glacier');
+    const setDanube = q('.scene-danube');
+    const setVienna = q('.scene-vienna');
+    const setPortrait = q('.composer-portrait');
+    const setGlobe = q('.globe-layer');
+    const setTopo = q('.topo');
+    const setBeacon = q('.beacon');
+
+    const meter = document.querySelector('.scroll-meter span');
+
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        trigger: root.current,
+        start: 'top top',
+        end: 'bottom bottom',
+        invalidateOnRefresh: true,
+
+        onUpdate: (self) => {
+          const p = self.progress;
+          progressRef.current = p;
+
+          if (meter) meter.style.transform = `scaleX(${p})`;
+
+          const list = Array.from(root.current?.querySelectorAll('.chapter') || []);
+          let railPos = 0;
+          let nearest = 0;
+          let nearestDistance = Infinity;
+
+          if (list.length > 1) {
+            const viewportCenter = window.innerHeight / 2;
+
+            const centers = list.map((el) => {
+              const r = el.getBoundingClientRect();
+              return r.top + r.height / 2;
+            });
+
+            centers.forEach((c, i) => {
+              const d = Math.abs(c - viewportCenter);
+
+              if (d < nearestDistance) {
+                nearestDistance = d;
+                nearest = i;
+              }
+            });
+
+            let lo = 0;
+
+            while (
+              lo < centers.length - 1 &&
+              centers[lo + 1] < viewportCenter
+            ) {
+              lo++;
+            }
+
+            const hi = Math.min(lo + 1, centers.length - 1);
+
+            if (lo === hi) {
+              railPos = lo;
+            } else {
+              const span = centers[hi] - centers[lo];
+
+              railPos =
+                span === 0
+                  ? lo
+                  : lo + clamp((viewportCenter - centers[lo]) / span);
+            }
+
+            railPos = clamp(railPos, 0, list.length - 1);
+          }
+
+          railProgressRef.current =
+            list.length > 1 ? railPos / (list.length - 1) : 0;
+
+          document.documentElement.style.setProperty(
+            '--rail-progress',
+            String(railProgressRef.current)
+          );
+
+          if (nearest !== activeRef.current) {
+            activeRef.current = nearest;
+            setActive(nearest);
+          }
+
+          // Background transitions
+          const g1 = smooth(p, 0.155, 0.195);
+          const g2 = smooth(p, 0.255, 0.295);
+          const g3 = smooth(p, 0.355, 0.395);
+          const g4 = smooth(p, 0.455, 0.495);
+          const gg = smooth(p, 0.505, 0.56);
+
+          setAlps({
+            opacity: 1 - g1,
+            transform: `scale(${1 + p * 0.055}) translate3d(0,${-p * 2.5}vh,0)`,
+          });
+
+          setGlacier({
+            opacity: clamp(g1 - g2),
+            transform: `scale(${1.045 - p * 0.03})`,
+          });
+
+          setDanube({
+            opacity: clamp(g2 - g3),
+            transform: `scale(${1.04 - (p - 0.25) * 0.028})`,
+          });
+
+          setVienna({
+            opacity: clamp(g3 - g4),
+            transform: `scale(${1.035 - (p - 0.36) * 0.02})`,
+          });
+
+          setPortrait({
+            opacity: clamp(
+              smooth(p, 0.39, 0.42) - smooth(p, 0.47, 0.5)
+            ),
+            transform: `translate3d(${
+              (1 - smooth(p, 0.39, 0.42)) * 6
+            }vw,0,0)`,
+          });
+
+          setGlobe({
+            opacity: gg,
+            transform: `scale(${0.95 + gg * 0.05})`,
+          });
+
+          setTopo({
+            opacity: 0.34 * (1 - smooth(p, 0.34, 0.56)),
+          });
+
+          setBeacon({
+            opacity: 0.25 + 0.75 * smooth(p, 0.08, 0.62),
+            transform: `translate3d(${
+              Math.sin(p * Math.PI * 1.8) * 5
+            }vw,${
+              Math.cos(p * Math.PI * 1.2) * 3
+            }vh,0) scale(${0.82 + p * 0.38})`,
+          });
+        },
+      });
+
+      gsap.utils.toArray('.chapter-copy').forEach((el) => {
+        gsap.fromTo(
+          el,
+          { y: 42 },
+          {
+            y: 0,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 84%',
+              end: 'center 50%',
+              scrub: 0.7,
+            },
+          }
+        );
+      });
+
+      gsap.utils
+        .toArray(
+          '.statement,.layer-stack,.composer-line,.beacon-label,.location-unlock,.passport-card,.mixer'
+        )
+        .forEach((el) => {
+          gsap.fromTo(
+            el,
+            { y: 20 },
+            {
+              y: 0,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: el,
+                start: 'top 88%',
+                end: 'top 66%',
+                scrub: 0.55,
+              },
+            }
+          );
+        });
+    }, root);
+
+    // Gentle presentation settle
+    let settleTimer = 0;
+    let programmatic = false;
+
+    const slides = () =>
+      Array.from(root.current?.querySelectorAll('.chapter') || []);
+
+    const targetFor = (el) =>
+      window.scrollY +
+      el.getBoundingClientRect().top +
+      (el.offsetHeight - window.innerHeight) / 2;
+
+    const settle = () => {
+      if (!lenis || programmatic) return;
+
+      const list = slides();
+      if (!list.length) return;
+
+      const center = window.innerHeight / 2;
+      let best = list[0];
+      let distance = Infinity;
+
+      for (const el of list) {
+        const r = el.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - center);
+
+        if (d < distance) {
+          distance = d;
+          best = el;
+        }
+      }
+
+      if (distance > window.innerHeight * 0.38) return;
+
+      programmatic = true;
+
+      lenis.scrollTo(targetFor(best), {
+        duration: 1.15,
+        easing: (t) => 1 - Math.pow(1 - t, 4),
+        onComplete: () => {
+          programmatic = false;
+        },
+      });
+    };
+
+    const onLenisScroll = () => {
+      if (programmatic) return;
+
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(settle, 260);
+    };
+
+    lenis?.on('scroll', onLenisScroll);
+
+    // Keyboard navigation
+    const goRelative = (dir) => {
+      const list = slides();
+
+      if (!list.length || !lenis) return;
+
+      const center = window.innerHeight / 2;
+      let nearest = 0;
+      let distance = Infinity;
+
+      list.forEach((el, i) => {
+        const r = el.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - center);
+
+        if (d < distance) {
+          distance = d;
+          nearest = i;
+        }
+      });
+
+      const next = Math.max(
+        0,
+        Math.min(list.length - 1, nearest + dir)
+      );
+
+      programmatic = true;
+
+      lenis.scrollTo(targetFor(list[next]), {
+        duration: 1.2,
+        easing: (t) => 1 - Math.pow(1 - t, 4),
+        onComplete: () => {
+          programmatic = false;
+        },
+      });
+    };
+
+    const onKey = (e) => {
+      if (
+        ['ArrowDown', 'PageDown'].includes(e.key) ||
+        e.key === ' '
+      ) {
+        e.preventDefault();
+        goRelative(1);
+      } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        goRelative(-1);
+      }
+    };
+
+    window.addEventListener('keydown', onKey, { passive: false });
+
+    ScrollTrigger.refresh();
+
+    return () => {
+      clearTimeout(settleTimer);
+      window.removeEventListener('keydown', onKey);
+      ctx.revert();
+
+      if (lenis) {
+        lenis.off('scroll', onLenisScroll);
+        lenis.destroy();
+        gsap.ticker.remove(raf);
+      }
+    };
+  }, []);
+
+  return (
+    <main ref={root} className="site-shell">
+
+      {/* Background visuals */}
+      <div className="fixed-stage">
+        <AlpineScene />
+        <TopographicField intensity={1} />
+
+        <div className="globe-layer">
+          <GlobeScene progressRef={progressRef} />
+        </div>
+
+        <div className="vignette" />
+        <div className="grain" />
+
+        <div className="beacon">
+          <span />
+          <i />
+        </div>
+      </div>
+
+      {/* Top bar */}
+      <header className="topbar">
+        <div className="brand">
+          <TabiKlangLogo compact />
+          <span>TABIKLANG</span>
+        </div>
+
+        <div className="topbar-center">
+          Journey into soundscapes
+        </div>
+
+        <div className="topbar-end">
+          Austria / World
+        </div>
+      </header>
+
+      <div className="scroll-meter">
+        <span />
+      </div>
+
+      {/* 01 — Hero */}
+      <section
+        className="hero chapter hero-reference"
+        aria-label="TabiKlang — Journey into soundscapes"
+      >
+        <img
+          className="hero-reference-image"
+          src="/tabiklang-hero.png"
+          alt="TabiKlang — Journey into soundscapes"
+        />
+
+        <div className="hero-reference-shade" />
+      </section>
+
+      {/* 02–10 — Main story */}
+      {chapters.map((chapter, index) => (
+        <section
+          className={`chapter chapter-${index + 1}`}
+          key={chapter.number}
+        >
+          <div className="chapter-copy">
+            <div className="chapter-no">
+              {chapter.number}
+            </div>
+
+            <h2>{chapter.title}</h2>
+            <p>{chapter.text}</p>
+
+            <ChapterExtra index={index} />
+          </div>
+        </section>
+      ))}
+
+      {/* 11 — Demo */}
+      <section className="chapter demo-chapter">
+        <div className="chapter-copy demo-copy">
+          <div className="chapter-no">11</div>
+
+          <h2>See TabiKlang in action.</h2>
+
+          <p>
+            From discovering a Sound Beacon to capturing a place,
+            building a Sound Passport and combining what you collect.
+          </p>
+
+          {/* Current placeholder 
+          <div className="demo-placeholder">
+            <div className="demo-frame">
+              <span>DEMO VIDEO</span>
+              <b>Video will be added here</b>
+              <i>16:9 · presentation-ready</i>
+            </div>
+          </div>
+*/}
+            <div className="demo-video-frame">
+              <video
+                src="/tabiklang-demo.mp4"
+                controls
+                playsInline
+                preload="metadata"
+              />
+            </div>
+          
+        </div>
+      </section>
+
+      {/* 12 — Closing */}
+      <section className="chapter finale">
+        <div className="chapter-copy finale-copy">
+          <div className="eyebrow">
+            12 · TabiKlang
+          </div>
+
+          <h2>Every place has a sound.</h2>
+
+          <p>
+            TabiKlang gives you a reason to find it. Explore real
+            places, capture their soundscapes, build your collection
+            and turn your journey into something new.
+          </p>
+
+          <div className="final-grid">
+            <span>EXPLORE</span>
+            <span>TRAVEL</span>
+            <span>CAPTURE</span>
+            <span>REMIX</span>
+          </div>
+
+          <div className="team">
+            {teamNames}
+          </div>
+        </div>
+      </section>
+
+      {/* Right-side presentation rail */}
+      <aside
+        className="chapter-rail"
+        aria-label="Presentation progress"
+      >
+        <div className="rail-line" />
+        <div className="rail-ball" />
+
+        {railItems.map((item, i) => (
+          <div
+            className={`rail-item ${i === active ? 'active' : ''}`}
+            key={item[0]}
+            style={{ '--rail-index': i }}
+          >
+            <span className="rail-dot" />
+
+            <div>
+              <b>{item[0]}</b>
+              <em>{item[1]}</em>
+            </div>
+          </div>
+        ))}
+      </aside>
+    </main>
+  );
+}
