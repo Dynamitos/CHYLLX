@@ -114,6 +114,8 @@ export default function App() {
     const setPortrait = q('.composer-portrait');
     const setAustria = q('.austria-badge');
     const setCow = q('.cow-badge');
+    const setTopbar = q('.topbar');
+    const setRail = q('.chapter-rail');
     const setGlobe = q('.globe-layer');
     const setTopo = q('.topo');
     const setBeacon = q('.beacon');
@@ -275,6 +277,21 @@ export default function App() {
             setCow({
               opacity: introReveal,
               transform: `translate3d(0,${(1 - introReveal) * 16}px,0) scale(${0.94 + introReveal * 0.06})`,
+            });
+
+            // Nav (top bar + chapter rail): hidden while resting on the intro,
+            // fades in once the user starts scrolling away — and stays visible
+            // (no fade-out term) for the rest of the presentation.
+            const navReveal = smooth(self.progress, 0.03, 0.22);
+
+            setTopbar({
+              opacity: navReveal,
+              transform: `translate3d(0,${(1 - navReveal) * -14}px,0)`,
+            });
+
+            setRail({
+              opacity: navReveal,
+              transform: `translate3d(${(1 - navReveal) * 14}px,-50%,0)`,
             });
           },
         });

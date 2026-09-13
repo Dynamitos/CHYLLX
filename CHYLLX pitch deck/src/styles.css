@@ -564,6 +564,13 @@
   .cow-badge{display:none}
 }
 
+/* Nav: hidden at rest on the intro, revealed by GSAP once scrolling begins (see App.jsx) */
+.topbar,
+.chapter-rail{
+  opacity:0;
+  will-change:transform,opacity;
+}
+
 /* =========================================================
    DEMO VIDEO — fitted for presentation viewport
    ========================================================= */
