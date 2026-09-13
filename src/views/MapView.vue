@@ -20,7 +20,7 @@ import { useGeolocation } from '@/composables/useGeolocation'
 import { createSimFeed } from '@/lib/demoSim'
 import { spotRepository } from '@/lib/spotRepository'
 import { getAllPieces, isCollected, savePiece } from '@/lib/db'
-import { renderForSpot, toCollectedPiece } from '@/lib/audio'
+import { COLLECT_VIDEO_URL, pausePlayer, renderForSpot, toCollectedPiece } from '@/lib/audio'
 import { isWithinRadius, type LatLng } from '@/lib/geo'
 
 /**
@@ -60,7 +60,15 @@ const mapEl = ref<HTMLElement | null>(null)
 
 const collected = ref<CollectedPiece[]>([])
 const spots: Ref<MusicSpot[]> = ref([])
-const pendingSpot = ref<MusicSpot | null>(null)
+// The spot whose reveal video has finished; the collect modal is shown for it.
+let pendingSpot: MusicSpot | null = null
+const revealDone = ref(false)
+// True while the reveal video is on screen. The video element lives in a
+// <Teleport> to document.body (see template) so it renders in the topmost
+// stacking context — a sibling of the map's 3D-transformed canvas would be
+// painted *under* it and the reveal would be invisible.
+const revealActive = ref(false)
+const revealVideoEl = ref<HTMLVideoElement | null>(null)
 const collecting = ref(false)
 const sheetOpen = ref(false)
 
@@ -89,6 +97,11 @@ function flyToSpot(spot: MusicSpot): void {
 }
 
 function onKeydown(e: KeyboardEvent): void {
+  // Escape dismisses the reveal video (without opening the modal).
+  if (e.key === 'Escape' && revealActive.value) {
+    skipReveal()
+    return
+  }
   if (!FLY_KEYS.includes(e.key as (typeof FLY_KEYS)[number])) return
   const spot = spots.value[Number(e.key) - 1]
   if (spot) flyToSpot(spot)
@@ -377,7 +390,65 @@ async function loadCollection(): Promise<void> {
   collected.value = await getAllPieces()
 }
 
-async function onCollect(spot: MusicSpot): Promise<void> {
+async function collectFromFab(): Promise<void> {
+  const target = spots.value.find((s) => s.status === 'collectable')
+  if (!target) return
+  pendingSpot = target
+  revealDone.value = false
+  revealActive.value = true
+  pausePlayer() // stop any collection-sheet/preview playback first.
+  // The <video> is bound in the template via `revealVideoEl`; Vue has mounted it
+  // before our next microtask, so the element is available to play now. (The
+  // Collect tap is a user gesture, but the video is muted so autoplay is allowed
+  // regardless.)
+  requestAnimationFrame(() => {
+    const v = revealVideoEl.value
+    if (!v) return
+    v.currentTime = 0
+    // Muted => `.play()` resolves reliably. Retry a few times in case the source
+    // isn't seekable on the first frame (autoplay-policy can reject an early
+    // play() before metadata loads).
+    const attempt = (n: number) => {
+      if (!revealActive.value) return
+      const rendered = renderForSpot(target)
+      const a = new Audio(rendered.assetUrl)
+      a.volume = 0.5
+      setTimeout(() => a.pause(), 17000)
+      void a.play().catch(() => {})
+      v.play().catch(() => {
+        if (n <= 0 || !revealActive.value) return
+        setTimeout(() => attempt(n - 1), 200)
+      })
+    }
+    attempt(6)
+  })
+}
+
+/**
+ * The reveal video ended (or the user tapped/Esc to skip it): hand off to the
+ * collect modal. The reveal never saves anything — only "Keep it" does.
+ */
+function onRevealEnded(): void {
+  revealActive.value = false
+  revealVideoEl.value?.pause()
+  revealDone.value = true
+}
+
+/**
+ * Dismiss the reveal entirely (Escape) without opening the modal.
+ */
+function skipReveal(): void {
+  revealActive.value = false
+  revealVideoEl.value?.pause()
+  pendingSpot = null
+  revealDone.value = false
+}
+
+/**
+ * "Keep it" in the collect modal — the user has watched the reveal and now
+ * chooses to keep the piece. This is the only path that actually saves.
+ */
+async function onKeepSpot(spot: MusicSpot): Promise<void> {
   if (collecting.value) return
   collecting.value = true
   try {
@@ -387,25 +458,24 @@ async function onCollect(spot: MusicSpot): Promise<void> {
     spot.status = 'collected'
     collected.value = await getAllPieces()
     refreshSpotMarkers()
-    pendingSpot.value = null
+    pendingSpot = null
+    revealDone.value = false
   } finally {
     collecting.value = false
   }
 }
 
+/**
+ * Preview a track inside the collect modal (the reveal already played the
+ * video; this is a short audio-only preview of the piece itself).
+ */
 function onPreview(spot: MusicSpot): void {
-  // A tiny preview so the modal isn't silent. Uses the (stub) resolved URL.
+  pausePlayer()
   const rendered = renderForSpot(spot)
-  const audio = new Audio(rendered.assetUrl)
-  audio.volume = 0.5
-  void audio.play().catch(() => {})
-  // Stop after 3s so it doesn't bleed into collection.
-  setTimeout(() => audio.pause(), 3000)
-}
-
-function openCollectModal(): void {
-  const target = spots.value.find((s) => s.status === 'collectable')
-  if (target) pendingSpot.value = target
+  const a = new Audio(rendered.assetUrl)
+  a.volume = 0.5
+  void a.play().catch(() => {})
+  setTimeout(() => a.pause(), 3000)
 }
 </script>
 
@@ -427,7 +497,8 @@ function openCollectModal(): void {
         v-if="hasCollectable"
         class="collect-fab"
         type="button"
-        @click="openCollectModal"
+        :disabled="collecting"
+        @click="collectFromFab"
       >
         Collect
       </button>
@@ -438,15 +509,34 @@ function openCollectModal(): void {
       ♪ <span>{{ collected.length }}</span>
     </button>
 
-    <!-- Collect modal. -->
+    <!-- Collect modal: shown only after the reveal video has finished. -->
     <CollectModal
-      v-if="pendingSpot"
+      v-if="revealDone && pendingSpot"
       :spot="pendingSpot"
       :busy="collecting"
-      @collect="onCollect"
+      @collect="onKeepSpot"
       @preview="onPreview"
-      @close="pendingSpot = null"
+      @close="pendingSpot = null; revealDone = false"
     />
+
+    <!--
+      Full-screen collect-reveal video. Teleported to <body> so it sits in the
+      topmost stacking context — the map's 3D-transformed canvas otherwise
+      paints over a `position: fixed` sibling and the video would be invisible.
+    -->
+    <Teleport to="body">
+      <div v-if="revealActive" class="collect-reveal" @click="onRevealEnded">
+        <video
+          ref="revealVideoEl"
+          class="collect-reveal-video"
+          :src="COLLECT_VIDEO_URL"
+          muted
+          playsinline
+          preload="auto"
+          @ended="onRevealEnded"
+        ></video>
+      </div>
+    </Teleport>
 
     <!-- Collection sheet. -->
     <CollectionSheet
@@ -632,6 +722,28 @@ function openCollectModal(): void {
   50% {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 0 14px rgba(245, 158, 11, 0);
   }
+}
+
+/* --- Full-screen "collect reveal" (Teleported to <body>, so unscoped) ---
+   `isolation: isolate` gives the overlay its own stacking context with a high
+   z-index, so it always sits above the map's 3D canvas regardless of how the
+   map layers their z-index. */
+.collect-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647; /* max 32-bit, above anything the map uses */
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  cursor: pointer;
+}
+.collect-reveal-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
 }
 
 /* --- Transitions for banner / FAB --- */

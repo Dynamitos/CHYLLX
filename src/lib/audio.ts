@@ -94,6 +94,12 @@ export function getBaseSong(id: BaseSongId): BaseSong {
  * mood (a start offset + a tempo nudge) so the API is already exercised and
  * stable for the real implementation to slot into.
  */
+/**
+ * The full-screen "collect reveal" video, played over the collected piece's
+ * audio when a spot is collected. Shipped in /music/ alongside the tracks.
+ */
+export const COLLECT_VIDEO_URL = '/music/Mozart%20at%20the%20Piano.mp4'
+
 export interface RenderedPiece {
   /** Playable URL for the (stub) rendering. */
   assetUrl: string
