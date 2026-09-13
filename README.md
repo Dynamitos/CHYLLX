@@ -1,4 +1,4 @@
-# Classica — Explore & Collect
+# TabiKlang — Explore & Collect
 
 A Pokémon-Go-style **PWA** built on Vue 3 + Vite + TypeScript + MapLibre GL JS
 (3D globe + satellite imagery).
