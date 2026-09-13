@@ -263,10 +263,10 @@
 
 /* Continuous presentation rail */
 .chapter-indicator{display:none!important}
-.chapter-rail{--rail-count:12;position:fixed;right:28px;top:50%;transform:translateY(-50%);z-index:40;width:128px;height:min(76vh,660px);pointer-events:none;color:#7f8086}
+.chapter-rail{--rail-count:7;position:fixed;right:28px;top:50%;transform:translateY(-50%);z-index:40;width:128px;height:min(76vh,660px);pointer-events:none;color:#7f8086}
 .rail-line{position:absolute;left:10px;top:10px;bottom:10px;width:1px;background:rgba(255,255,255,.22)}
 .rail-ball{position:absolute;left:4px;top:4px;width:13px;height:13px;border-radius:50%;background:#d7193f;box-shadow:0 0 18px rgba(215,25,63,.35);transform:translateY(calc(var(--rail-progress,0) * (min(76vh,660px) - 20px)));will-change:transform;transition:background .25s ease,box-shadow .25s ease}
-.rail-item{position:absolute;left:4px;right:0;top:calc(4px + (var(--rail-index) / 11) * (100% - 20px));display:grid;grid-template-columns:14px 1fr;gap:13px;align-items:center;transform:translateY(-1px);transition:color .35s ease,opacity .35s ease;opacity:.68}
+.rail-item{position:absolute;left:4px;right:0;top:calc(4px + (var(--rail-index) / (var(--rail-count) - 1)) * (100% - 20px));display:grid;grid-template-columns:14px 1fr;gap:13px;align-items:center;transform:translateY(-1px);transition:color .35s ease,opacity .35s ease;opacity:.68}
 .rail-dot{width:11px;height:11px;border-radius:50%;background:#77787d;border:1px solid rgba(255,255,255,.12);transition:opacity .3s ease,transform .3s ease,background-color .3s ease}
 .rail-item>div{display:flex;flex-direction:column;gap:3px;transform:translateY(-2px)}
 .rail-item b{font-size:9px;line-height:1;letter-spacing:.16em;font-weight:500;color:inherit}
@@ -452,6 +452,9 @@
   padding:0 !important;
   overflow:hidden;
   background:#08080a !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
 }
 .hero-reference-image{
   position:absolute !important;
@@ -511,7 +514,7 @@
   background:
     linear-gradient(90deg,rgba(8,8,10,.04),rgba(8,8,10,.36)),
     url("https://upload.wikimedia.org/wikipedia/commons/1/1e/Wolfgang-amadeus-mozart_1.jpg") center 18% / cover no-repeat !important;
-  filter:grayscale(1) contrast(1.08) brightness(.78) !important;
+  filter:grayscale(1) contrast(1.08) brightness(.78);
   image-rendering:auto !important;
 }
 .composer-portrait::before,
@@ -581,5 +584,6 @@
   max-width:900px;
 }
 .hero-copy{
-  text-align:left;
+  text-align:center;
+  margin:0 auto;
 }

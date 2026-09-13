@@ -6,11 +6,13 @@ import Lenis from 'lenis';
 import TopographicField from './components/TopographicField.jsx';
 import GlobeScene from './components/GlobeScene.jsx';
 import AlpineScene from './components/AlpineScene.jsx';
+import StackSpread from './components/ui/stack-spread.jsx';
 
 import {
   topbar,
   logo,
   hero,
+  journeyGallery,
   problem,
   motivation,
   core,
@@ -215,6 +217,8 @@ export default function App() {
             transform: `scale(${1.035 - (p - 0.36) * 0.02})`,
           });
 
+          const colorize = smooth(p, 0.43, 0.475);
+
           setPortrait({
             opacity: clamp(
               smooth(p, 0.39, 0.42) - smooth(p, 0.47, 0.5)
@@ -222,6 +226,7 @@ export default function App() {
             transform: `translate3d(${
               (1 - smooth(p, 0.39, 0.42)) * 6
             }vw,0,0)`,
+            filter: `grayscale(${1 - colorize}) contrast(${1.08 - colorize * 0.05}) brightness(${0.78 + colorize * 0.2})`,
           });
 
           setGlobe({
@@ -434,10 +439,6 @@ export default function App() {
         <div className="topbar-center">
           {topbar.center}
         </div>
-
-        <div className="topbar-end">
-          {topbar.end}
-        </div>
       </header>
 
       <div className="scroll-meter">
@@ -456,6 +457,9 @@ export default function App() {
 
         <div className="hero-reference-shade" />
       </section>
+
+      {/* 01b — Journey gallery */}
+      <StackSpread heading={journeyGallery.heading} sub={journeyGallery.sub} />
 
       {/* 02 — Problem */}
       <section className="chapter chapter-1">

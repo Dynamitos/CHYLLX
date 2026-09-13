@@ -8,7 +8,6 @@
 export const topbar = {
   brand: 'SOUNDQUEST',
   center: 'The journey is the instrument',
-  end: 'Prototype',
 };
 
 // Logo word mark (next to the icon)
@@ -22,6 +21,12 @@ export const hero = {
   title: 'SoundQuest',
   tagline: 'The journey is the instrument',
   alt: 'SoundQuest — the journey is the instrument',
+};
+
+// Slide 01b — Journey gallery (scroll-scatter, right after the hero)
+export const journeyGallery = {
+  heading: 'SoundQuest',
+  sub: 'The journey is the instrument',
 };
 
 // Slide 02 — Problem
@@ -89,7 +94,7 @@ export const railItems = [
 ];
 
 // Team credit on closing slide
-export const teamNames = 'CHYLLX — Name / Name / Name';
+export const teamNames = 'CHYLLX — Asma / Chaofan / Lindsay / Stefan / Yange';
 
 // Slide 07 — Closing
 export const finale = {
