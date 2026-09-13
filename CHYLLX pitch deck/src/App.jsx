@@ -35,9 +35,9 @@ const smooth = (p, a, b) => {
   return x * x * (3 - 2 * x);
 };
 
-function TabiKlangLogo({ compact = false }) {
+function SoundQuestLogo({ compact = false }) {
   return (
-    <div className={`tabiklang-logo ${compact ? 'compact' : ''}`} aria-label="TabiKlang">
+    <div className={`tabiklang-logo ${compact ? 'compact' : ''}`} aria-label="SoundQuest">
       <svg viewBox="0 0 120 120" aria-hidden="true">
         <circle cx="60" cy="60" r="47" className="logo-ring" />
         <path d="M26 78 50 42l14 20 10-14 20 30" className="logo-mountain" />
@@ -58,148 +58,14 @@ function TabiKlangLogo({ compact = false }) {
   );
 }
 
-function SoundPassport() {
+function BulletList({ items }) {
   return (
-    <div className="passport-card">
-      <div className="passport-top">
-        <span>{soundPassport.title}</span>
-        <span>{soundPassport.code}</span>
-      </div>
-
-      {soundPassport.items.map((item) => (
-        <div
-          className={`passport-item ${item.active ? 'active' : ''}`}
-          key={item.name}
-        >
-          <b>{item.name}</b>
-          <span>{item.type}</span>
-          <i>{item.status}</i>
-        </div>
+    <ul className="layer-stack bullet-list">
+      {items.map((item) => (
+        <li key={item}>{item}</li>
       ))}
-
-      <div className="wave-row">
-        {Array.from({ length: 34 }, (_, i) => (
-          <span
-            key={i}
-            style={{ height: `${16 + (Math.sin(i * 1.8) + 1) * 18}px` }}
-          />
-        ))}
-      </div>
-    </div>
+    </ul>
   );
-}
-
-function Mixer() {
-  return (
-    <div className="mixer">
-      {mixer.tracks.map((label, i) => (
-        <div className="mix-row" key={label}>
-          <span>{label}</span>
-          <div className="track">
-            <i style={{ width: `${86 - i * 18}%` }} />
-          </div>
-        </div>
-      ))}
-
-      <div className="fusion-orb">
-        <span>{mixer.fuseLabel}</span>
-      </div>
-    </div>
-  );
-}
-
-function ChapterExtra({ index }) {
-  if (index === 0) {
-    return (
-      <div className="statement">
-        {statement.line1}
-        <br />
-        <em>{statement.line2}</em>
-      </div>
-    );
-  }
-
-  if (index === 2) {
-    return (
-      <div className="beacon-label">
-        {beaconLabelWorld.prefix} <strong>{beaconLabelWorld.strong}</strong>
-      </div>
-    );
-  }
-
-  if (index === 3) {
-    return (
-      <div className="beacon-label">
-        {beaconLabelDestinations.line1.prefix}{' '}
-        <strong>{beaconLabelDestinations.line1.strong}</strong>
-        <br />
-        {beaconLabelDestinations.line2.prefix}{' '}
-        <strong>{beaconLabelDestinations.line2.strong}</strong>
-      </div>
-    );
-  }
-
-  if (index === 4) {
-    return (
-      <>
-        <div className="location-unlock">
-          <div className="unlock-radar">
-            <i className="unlock-ring ring-a" />
-            <i className="unlock-ring ring-b" />
-            <span className="unlock-beacon" />
-
-            <div className="unlock-copy">
-              <small>{locationUnlock.small}</small>
-              <b>
-                {locationUnlock.boldLine1}
-                <br />
-                {locationUnlock.boldLine2}
-              </b>
-            </div>
-          </div>
-
-          <div className="unlock-stems">
-            {locationUnlock.stems.map((stem) => (
-              <span key={stem}>{stem}</span>
-            ))}
-          </div>
-        </div>
-
-        <div className="layer-stack">
-          {locationUnlock.stems.map((stem) => (
-            <span key={stem}>{stem}</span>
-          ))}
-        </div>
-      </>
-    );
-  }
-
-  if (index === 5) return <SoundPassport />;
-  if (index === 6) return <Mixer />;
-
-  if (index === 7) {
-    return (
-      <div className="rarity-scale">
-        <span>{raritySale.famous}</span>
-        <i />
-        <strong>{raritySale.hidden}</strong>
-        <b>{raritySale.legendary}</b>
-      </div>
-    );
-  }
-
-  if (index === 8) {
-    return (
-      <div className="world-example">
-        <span>{worldExample.from}</span>
-        <i>→</i>
-        <span>{worldExample.to}</span>
-        <small>{worldExample.detail}</small>
-      </div>
-    );
-  }
-
-  return null;
 }
 
 
@@ -397,7 +263,7 @@ export default function App() {
 
       gsap.utils
         .toArray(
-          '.statement,.layer-stack,.composer-line,.beacon-label,.location-unlock,.passport-card,.mixer'
+          '.statement,.layer-stack,.composer-line,.beacon-label,.location-unlock,.passport-card,.mixer,.core-statement,.bullet-list'
         )
         .forEach((el) => {
           gsap.fromTo(
@@ -561,7 +427,7 @@ export default function App() {
       {/* Top bar */}
       <header className="topbar">
         <div className="brand">
-          <TabiKlangLogo compact />
+          <SoundQuestLogo compact />
           <span>{topbar.brand}</span>
         </div>
 
@@ -583,35 +449,46 @@ export default function App() {
         className="hero chapter hero-reference"
         aria-label={hero.alt}
       >
-        <img
-          className="hero-reference-image"
-          src="/tabiklang-hero.png"
-          alt={hero.alt}
-        />
+        <div className="chapter-copy hero-copy">
+          <h1>{hero.title}</h1>
+          <p>{hero.tagline}</p>
+        </div>
 
         <div className="hero-reference-shade" />
       </section>
 
-      {/* 02–10 — Main story */}
-      {chapters.map((chapter, index) => (
-        <section
-          className={`chapter chapter-${index + 1}`}
-          key={chapter.number}
-        >
-          <div className="chapter-copy">
-            <div className="chapter-no">
-              {chapter.number}
-            </div>
+      {/* 02 — Problem */}
+      <section className="chapter chapter-1">
+        <div className="chapter-copy">
+          <div className="chapter-no">{problem.number}</div>
 
-            <h2>{chapter.title}</h2>
-            <p>{chapter.text}</p>
+          <h2>{problem.heading}</h2>
 
-            <ChapterExtra index={index} />
-          </div>
-        </section>
-      ))}
+          <BulletList items={problem.items} />
+        </div>
+      </section>
 
-      {/* 11 — Demo */}
+      {/* 03 — Motivation */}
+      <section className="chapter chapter-2">
+        <div className="chapter-copy">
+          <div className="chapter-no">{motivation.number}</div>
+
+          <h2>{motivation.heading}</h2>
+
+          <BulletList items={motivation.items} />
+        </div>
+      </section>
+
+      {/* 04 — Core */}
+      <section className="chapter chapter-3">
+        <div className="chapter-copy">
+          <div className="chapter-no">{core.number}</div>
+
+          <div className="statement core-statement">{core.statement}</div>
+        </div>
+      </section>
+
+      {/* 05 — Demo */}
       <section className="chapter demo-chapter">
         <div className="chapter-copy demo-copy">
           <div className="chapter-no">{demo.number}</div>
@@ -622,15 +499,6 @@ export default function App() {
             {demo.text}
           </p>
 
-          {/* Current placeholder 
-          <div className="demo-placeholder">
-            <div className="demo-frame">
-              <span>DEMO VIDEO</span>
-              <b>Video will be added here</b>
-              <i>16:9 · presentation-ready</i>
-            </div>
-          </div>
-*/}
             <div className="demo-video-frame">
               <video
                 src="/tabiklang-demo.mp4"
@@ -643,7 +511,18 @@ export default function App() {
         </div>
       </section>
 
-      {/* 12 — Closing */}
+      {/* 06 — Solution */}
+      <section className="chapter chapter-4">
+        <div className="chapter-copy">
+          <div className="chapter-no">{solution.number}</div>
+
+          <h2>{solution.heading}</h2>
+
+          <BulletList items={solution.items} />
+        </div>
+      </section>
+
+      {/* 07 — Closing */}
       <section className="chapter finale">
         <div className="chapter-copy finale-copy">
           <div className="eyebrow">

@@ -28,7 +28,7 @@ export const hero = {
 export const problem = {
   number: '02',
   eyebrow: '02 · Problem',
-  heading: 'Music is disconnected from your journey',
+  heading: 'Problem',
   items: [
     'Music is disconnected from your journey',
     'Tourists feel distant from local culture',
@@ -40,7 +40,7 @@ export const problem = {
 export const motivation = {
   number: '03',
   eyebrow: '03 · Motivation',
-  heading: 'Travel becomes more memorable with a soundtrack',
+  heading: 'Motivation',
   items: [
     'Travel becomes more memorable when it has a soundtrack',
     'People love to discover and stamp their personal mark',
@@ -59,7 +59,7 @@ export const core = {
 export const demo = {
   number: '05',
   eyebrow: '05 · Demo',
-  heading: 'See SoundQuest in action.',
+  heading: 'Demo',
   text: 'A live look at how SoundQuest works — from discovering a destination to collecting your own personalized soundtrack.',
 };
 
@@ -67,7 +67,7 @@ export const demo = {
 export const solution = {
   number: '06',
   eyebrow: '06 · Solution',
-  heading: 'How SoundQuest works',
+  heading: 'Solution',
   items: [
     'We select music that represents each destination',
     'We personalize the music based on your journey',
