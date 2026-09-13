@@ -452,6 +452,9 @@
   padding:0 !important;
   overflow:hidden;
   background:#08080a !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
 }
 .hero-reference-image{
   position:absolute !important;
@@ -581,5 +584,6 @@
   max-width:900px;
 }
 .hero-copy{
-  text-align:left;
+  text-align:center;
+  margin:0 auto;
 }

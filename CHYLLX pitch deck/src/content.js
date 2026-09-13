@@ -8,7 +8,6 @@
 export const topbar = {
   brand: 'SOUNDQUEST',
   center: 'The journey is the instrument',
-  end: 'Prototype',
 };
 
 // Logo word mark (next to the icon)
@@ -89,7 +88,7 @@ export const railItems = [
 ];
 
 // Team credit on closing slide
-export const teamNames = 'CHYLLX — Name / Name / Name';
+export const teamNames = 'CHYLLX — Asma / Chaofan Li Huang / Lindsay Liu / Stefan Högler / Yange Zheng';
 
 // Slide 07 — Closing
 export const finale = {

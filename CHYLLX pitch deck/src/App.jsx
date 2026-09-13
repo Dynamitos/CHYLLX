@@ -434,10 +434,6 @@ export default function App() {
         <div className="topbar-center">
           {topbar.center}
         </div>
-
-        <div className="topbar-end">
-          {topbar.end}
-        </div>
       </header>
 
       <div className="scroll-meter">
